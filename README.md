@@ -1,6 +1,6 @@
 # In-house Ticketing System
 
-Helpdesk ticketing system sederhana, dibangun dari nol sebagai project belajar (dan portfolio 😄).
+Helpdesk ticketing system sederhana, dibangun dari nol sebagai project belajar.
 
 ## Tech Stack
 
