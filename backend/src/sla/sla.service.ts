@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
+import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { MailService } from '../mail/mail.service';
@@ -37,7 +37,7 @@ export class SlaService {
    * resolved/closed. Kalau ada dan belum ditandai breach, tandai + naikkan priority satu
    * level (auto-escalate) + kirim notifikasi ke assignee (atau semua staff kalau belum di-assign).
    */
-  @Cron(CronExpression.EVERY_15_MINUTES)
+  @Cron('0 */15 * * * *')
   async checkOverdueTickets() {
     const now = new Date();
 
