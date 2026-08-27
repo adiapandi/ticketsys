@@ -1,10 +1,15 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ticketsApi, attachmentsApi } from '../api/tickets';
+import { ticketsApi, attachmentsApi, usersApi } from '../api/tickets';
 import { categoriesApi, Category } from '../api/categories';
+import { usersManagementApi, AppUser } from '../api/users';
+import { useAuth } from '../context/AuthContext';
 
 export function CreateTicketPage() {
   const navigate = useNavigate();
+  const { user: currentUser } = useAuth();
+  const isStaff = currentUser?.role === 'ADMIN' || currentUser?.role === 'AGENT';
+
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState('MEDIUM');
@@ -14,9 +19,24 @@ export function CreateTicketPage() {
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  // Cuma dipakai kalau yang bikin ticket staff (agent/admin)
+  const [allUsers, setAllUsers] = useState<AppUser[]>([]);
+  const [agents, setAgents] = useState<{ id: string; name: string; email: string }[]>([]);
+  const [requestedForUserId, setRequestedForUserId] = useState('');
+  const [assigneeId, setAssigneeId] = useState('');
+
   useEffect(() => {
     categoriesApi.list().then((res) => setCategories(res.data));
-  }, []);
+    if (isStaff) {
+      usersManagementApi.list().then((res) => setAllUsers(res.data));
+      usersApi.agents().then((res) => {
+        setAgents(res.data);
+        // Default assign ke diri sendiri, karena biasanya staff yang bikin ticket = yang ngerjain
+        if (currentUser) setAssigneeId(currentUser.id);
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isStaff]);
 
   function handleFilesChange(e: React.ChangeEvent<HTMLInputElement>) {
     if (e.target.files) setFiles(Array.from(e.target.files));
@@ -32,6 +52,10 @@ export function CreateTicketPage() {
         description,
         priority,
         categoryId: categoryId || undefined,
+        ...(isStaff && {
+          requestedForUserId: requestedForUserId || undefined,
+          assigneeId: assigneeId || undefined,
+        }),
       });
       // Upload lampiran satu-satu setelah ticket berhasil dibuat
       for (const file of files) {
@@ -86,6 +110,46 @@ export function CreateTicketPage() {
             <option value="URGENT">Urgent</option>
           </select>
         </div>
+
+        {isStaff && (
+          <div className="border border-dashed border-slate-300 rounded-md p-3 space-y-3 bg-slate-50/50">
+            <p className="text-xs text-slate-500 font-medium">
+              Opsi staff — buat ticket atas nama user lain / kerjaan yang udah selesai duluan
+            </p>
+            <div>
+              <label className="text-sm text-slate-600">Dikerjakan untuk (User)</label>
+              <select
+                value={requestedForUserId}
+                onChange={(e) => setRequestedForUserId(e.target.value)}
+                className="w-full mt-1 px-3 py-2 border border-slate-300 rounded-md text-sm"
+              >
+                <option value="">Diri sendiri ({currentUser?.name})</option>
+                {allUsers
+                  .filter((u) => u.id !== currentUser?.id)
+                  .map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.name} ({u.email})
+                    </option>
+                  ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-sm text-slate-600">Assign ke</label>
+              <select
+                value={assigneeId}
+                onChange={(e) => setAssigneeId(e.target.value)}
+                className="w-full mt-1 px-3 py-2 border border-slate-300 rounded-md text-sm"
+              >
+                <option value="">Belum di-assign</option>
+                {agents.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name} {a.id === currentUser?.id ? '(kamu)' : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        )}
 
         <div>
           <label className="text-sm text-slate-600">Kategori (opsional)</label>
