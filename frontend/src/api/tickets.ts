@@ -47,7 +47,14 @@ export interface AppNotification {
 export const ticketsApi = {
   list: (params?: Record<string, string>) => api.get<Ticket[]>('/tickets', { params }),
   get: (id: string) => api.get<Ticket & { comments: Comment[] }>(`/tickets/${id}`),
-  create: (data: { title: string; description: string; priority?: string; categoryId?: string }) =>
+  create: (data: {
+    title: string;
+    description: string;
+    priority?: string;
+    categoryId?: string;
+    requestedForUserId?: string;
+    assigneeId?: string;
+  }) =>
     api.post<Ticket>('/tickets', data),
   update: (id: string, data: Partial<Ticket> & { assigneeId?: string }) =>
     api.patch<Ticket>(`/tickets/${id}`, data),
