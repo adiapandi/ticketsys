@@ -17,4 +17,14 @@ export class CreateTicketDto {
   @IsOptional()
   @IsString()
   categoryId?: string;
+
+  // Hanya dipakai kalau yang bikin ticket adalah staff (agent/admin):
+  // membuat ticket "atas nama" user lain (kerjaan udah selesai duluan, baru dicatat)
+  @IsOptional()
+  @IsString()
+  requestedForUserId?: string;
+
+  @IsOptional()
+  @IsString()
+  assigneeId?: string;
 }
