@@ -27,13 +27,20 @@ export class TicketsService {
     const priority = dto.priority || 'MEDIUM';
     const { firstResponseDueAt, resolutionDueAt } = this.slaService.computeDueDates(priority);
 
+    const isStaff = user.role === 'ADMIN' || user.role === 'AGENT';
+    // Staff bisa bikin ticket "atas nama" user lain (kerjaan udah selesai duluan, baru dicatat).
+    // Customer selalu jadi requester untuk dirinya sendiri.
+    const requesterId = isStaff && dto.requestedForUserId ? dto.requestedForUserId : user.userId;
+    const assigneeId = isStaff && dto.assigneeId ? dto.assigneeId : undefined;
+
     const ticket = await this.prisma.ticket.create({
       data: {
         title: dto.title,
         description: dto.description,
         priority,
         categoryId: dto.categoryId,
-        requesterId: user.userId,
+        requesterId,
+        assigneeId,
         firstResponseDueAt,
         resolutionDueAt,
       },
@@ -41,8 +48,9 @@ export class TicketsService {
     });
 
     // Notifikasi ke semua agent & admin bahwa ada ticket baru masuk
+    // (kalau ticket langsung di-assign saat dibuat, assignee tidak perlu dobel notif "ticket baru")
     const staff = await this.prisma.user.findMany({
-      where: { role: { in: ['AGENT', 'ADMIN'] } },
+      where: { role: { in: ['AGENT', 'ADMIN'] }, id: { not: assigneeId } },
       select: { id: true, email: true },
     });
     await Promise.all(
@@ -58,6 +66,22 @@ export class TicketsService {
         ]),
       ),
     );
+
+    // Kalau langsung di-assign saat dibuat, kirim notif assignment ke yang ditugaskan
+    if (assigneeId) {
+      const assignee = await this.prisma.user.findUnique({ where: { id: assigneeId } });
+      if (assignee) {
+        await Promise.all([
+          this.notificationsService.create(
+            assignee.id,
+            'TICKET_ASSIGNED',
+            `Kamu di-assign ke ticket "${ticket.title}"`,
+            ticket.id,
+          ),
+          this.mailService.sendTicketAssigned(assignee.email, ticket.title, ticket.id),
+        ]);
+      }
+    }
 
     return ticket;
   }
