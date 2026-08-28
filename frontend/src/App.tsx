@@ -8,6 +8,7 @@ import { TicketDetailPage } from './pages/TicketDetailPage';
 import { CreateTicketPage } from './pages/CreateTicketPage';
 import { CategoriesPage } from './pages/CategoriesPage';
 import { UsersPage } from './pages/UsersPage';
+import { CsatReportPage } from './pages/CsatReportPage';
 import { ProfilePage } from './pages/ProfilePage';
 
 export default function App() {
@@ -28,6 +29,7 @@ export default function App() {
         <Route path="/tickets/:id" element={<TicketDetailPage />} />
         <Route path="/admin/categories" element={<CategoriesPage />} />
         <Route path="/admin/users" element={<UsersPage />} />
+        <Route path="/admin/csat" element={<CsatReportPage />} />
         <Route path="/profile" element={<ProfilePage />} />
       </Route>
     </Routes>
