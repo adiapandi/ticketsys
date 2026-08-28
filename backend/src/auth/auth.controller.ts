@@ -4,6 +4,7 @@ import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -20,5 +21,12 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   changePassword(@Body() dto: ChangePasswordDto, @CurrentUser() user: any) {
     return this.authService.changePassword(user.userId, dto);
+  }
+
+  @Post('profile')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  updateProfile(@Body() dto: UpdateProfileDto, @CurrentUser() user: any) {
+    return this.authService.updateProfile(user.userId, dto);
   }
 }
