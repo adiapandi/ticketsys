@@ -5,33 +5,58 @@ import { StatusBadge, PriorityBadge, SlaBadge } from '../components/Badges';
 
 const STATUS_OPTIONS = ['', 'OPEN', 'IN_PROGRESS', 'PENDING', 'RESOLVED', 'CLOSED'];
 const PRIORITY_OPTIONS = ['', 'LOW', 'MEDIUM', 'HIGH', 'URGENT'];
+const SORT_OPTIONS = [
+  { label: 'Terbaru dibuat', sortBy: 'createdAt', order: 'desc' },
+  { label: 'Terlama dibuat', sortBy: 'createdAt', order: 'asc' },
+  { label: 'Terakhir diupdate', sortBy: 'updatedAt', order: 'desc' },
+  { label: 'SLA due date terdekat', sortBy: 'resolutionDueAt', order: 'asc' },
+  { label: 'Judul A-Z', sortBy: 'title', order: 'asc' },
+];
+const PAGE_SIZE = 15;
 
 export function TicketListPage() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState('');
   const [priority, setPriority] = useState('');
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [sortIndex, setSortIndex] = useState(0);
 
   async function load() {
     setLoading(true);
-    const params: Record<string, string> = {};
+    const sort = SORT_OPTIONS[sortIndex];
+    const params: Record<string, string> = {
+      page: String(page),
+      limit: String(PAGE_SIZE),
+      sortBy: sort.sortBy,
+      order: sort.order,
+    };
     if (status) params.status = status;
     if (priority) params.priority = priority;
     if (search) params.search = search;
     const { data } = await ticketsApi.list(params);
-    setTickets(data);
+    setTickets(data.data);
+    setTotal(data.total);
+    setTotalPages(data.totalPages);
     setLoading(false);
   }
 
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, priority]);
+  }, [status, priority, page, sortIndex]);
 
   function handleSearchSubmit(e: React.FormEvent) {
     e.preventDefault();
-    load();
+    setPage(1);
+  }
+
+  function handleFilterChange(setter: (v: string) => void, value: string) {
+    setter(value);
+    setPage(1);
   }
 
   return (
@@ -60,7 +85,7 @@ export function TicketListPage() {
           <label className="text-xs text-slate-500">Status</label>
           <select
             value={status}
-            onChange={(e) => setStatus(e.target.value)}
+            onChange={(e) => handleFilterChange(setStatus, e.target.value)}
             className="block mt-1 px-3 py-1.5 border border-slate-300 rounded-md text-sm"
           >
             {STATUS_OPTIONS.map((s) => (
@@ -74,12 +99,29 @@ export function TicketListPage() {
           <label className="text-xs text-slate-500">Priority</label>
           <select
             value={priority}
-            onChange={(e) => setPriority(e.target.value)}
+            onChange={(e) => handleFilterChange(setPriority, e.target.value)}
             className="block mt-1 px-3 py-1.5 border border-slate-300 rounded-md text-sm"
           >
             {PRIORITY_OPTIONS.map((p) => (
               <option key={p} value={p}>
                 {p || 'Semua'}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="text-xs text-slate-500">Urutkan</label>
+          <select
+            value={sortIndex}
+            onChange={(e) => {
+              setSortIndex(Number(e.target.value));
+              setPage(1);
+            }}
+            className="block mt-1 px-3 py-1.5 border border-slate-300 rounded-md text-sm"
+          >
+            {SORT_OPTIONS.map((s, i) => (
+              <option key={s.label} value={i}>
+                {s.label}
               </option>
             ))}
           </select>
@@ -112,6 +154,30 @@ export function TicketListPage() {
           </Link>
         ))}
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between text-sm text-slate-500">
+          <p>
+            Halaman {page} dari {totalPages} · {total} ticket total
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="px-3 py-1.5 border border-slate-300 rounded-md disabled:opacity-40 hover:bg-slate-50"
+            >
+              ← Sebelumnya
+            </button>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="px-3 py-1.5 border border-slate-300 rounded-md disabled:opacity-40 hover:bg-slate-50"
+            >
+              Selanjutnya →
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
