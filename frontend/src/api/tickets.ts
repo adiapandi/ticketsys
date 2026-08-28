@@ -13,6 +13,9 @@ export interface Ticket {
   slaBreached?: boolean;
   escalated?: boolean;
   isOverdue?: boolean;
+  csatRating?: number | null;
+  csatComment?: string | null;
+  csatSubmittedAt?: string | null;
   requester: { id: string; name: string; email: string };
   assignee?: { id: string; name: string; email: string } | null;
   category?: { id: string; name: string } | null;
@@ -67,6 +70,9 @@ export const ticketsApi = {
   update: (id: string, data: Partial<Ticket> & { assigneeId?: string }) =>
     api.patch<Ticket>(`/tickets/${id}`, data),
   remove: (id: string) => api.delete(`/tickets/${id}`),
+  submitCsat: (id: string, data: { rating: number; comment?: string }) =>
+    api.post(`/tickets/${id}/csat`, data),
+  csatStats: () => api.get('/tickets/csat-stats'),
   stats: () =>
     api.get<{ open: number; inProgress: number; resolved: number; closed: number; total: number }>(
       '/tickets/stats',
