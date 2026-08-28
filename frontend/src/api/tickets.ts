@@ -44,8 +44,16 @@ export interface AppNotification {
   ticketId: string | null;
 }
 
+export interface PaginatedTickets {
+  data: Ticket[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 export const ticketsApi = {
-  list: (params?: Record<string, string>) => api.get<Ticket[]>('/tickets', { params }),
+  list: (params?: Record<string, string>) => api.get<PaginatedTickets>('/tickets', { params }),
   get: (id: string) => api.get<Ticket & { comments: Comment[] }>(`/tickets/${id}`),
   create: (data: {
     title: string;
