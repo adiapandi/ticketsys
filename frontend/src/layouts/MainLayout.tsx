@@ -40,7 +40,9 @@ export function MainLayout() {
                 </>
               )}
               <NotificationBell />
-              <span className="text-sm text-slate-600">{user.name}</span>
+              <Link to="/profile" className="text-sm text-slate-600 hover:text-blue-600">
+              {user.name}
+              </Link>
               <span
                 className={`text-xs px-2 py-0.5 rounded-full font-medium ${roleBadgeColor[user.role]}`}
               >
