@@ -340,8 +340,6 @@ export class TicketsService {
       recent: rated.slice(0, 20),
     };
   }
-
-</parameter>
   
   async getStats(user: AuthUser) {
     const where: any = user.role === 'CUSTOMER' ? { requesterId: user.userId } : {};
