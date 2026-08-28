@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { ticketsApi, commentsApi, usersApi, Ticket, Comment } from '../api/tickets';
 import { StatusBadge, PriorityBadge, SlaBadge } from '../components/Badges';
 import { AttachmentSection } from '../components/AttachmentSection';
+import { AuditLogList } from '../components/AuditLogList';
 import { useAuth } from '../context/AuthContext';
 
 const STATUS_OPTIONS = ['OPEN', 'IN_PROGRESS', 'PENDING', 'RESOLVED', 'CLOSED'];
@@ -140,6 +141,8 @@ export function TicketDetailPage() {
         </div>
 
         <AttachmentSection ticketId={ticket.id} canDelete={isStaff} />
+
+        {isStaff && <AuditLogList ticketId={ticket.id} />}
       </div>
 
       {isStaff && (
