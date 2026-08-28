@@ -1,6 +1,7 @@
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { NotificationBell } from '../components/NotificationBell';
+import { Avatar } from '../components/Avatar';
 
 const roleBadgeColor: Record<string, string> = {
   ADMIN: 'bg-red-100 text-red-700',
@@ -40,7 +41,8 @@ export function MainLayout() {
                 </>
               )}
               <NotificationBell />
-              <Link to="/profile" className="text-sm text-slate-600 hover:text-blue-600">
+              <Link to="/profile" className="flex items-center gap-2 text-sm text-slate-600 hover:text-blue-600">
+              <Avatar name={user.name} avatarUrl={user.avatarUrl} size={28} />
               {user.name}
               </Link>
               <span
