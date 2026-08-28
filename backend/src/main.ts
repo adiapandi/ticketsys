@@ -4,6 +4,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import * as fs from 'fs';
 import { AppModule } from './app.module';
 import { UPLOAD_DIR } from './attachments/multer.config';
+import { AVATAR_DIR } from './auth/avatar-multer.config';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -12,11 +13,17 @@ async function bootstrap() {
   if (!fs.existsSync(UPLOAD_DIR)) {
     fs.mkdirSync(UPLOAD_DIR, { recursive: true });
   }
+  if (!fs.existsSync(AVATAR_DIR)) {
+    fs.mkdirSync(AVATAR_DIR, { recursive: true });
+  }
 
   app.enableCors({
     origin: process.env.FRONTEND_URL || 'http://localhost:5173',
     credentials: true,
   });
+
+  // Foto profil disajikan sebagai static file publik (bukan lewat endpoint JWT kayak attachment biasa)
+  app.useStaticAssets(AVATAR_DIR, { prefix: '/uploads/avatars/' });
 
   app.useGlobalPipes(
     new ValidationPipe({
