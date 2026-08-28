@@ -13,6 +13,7 @@ import { TicketsService } from './tickets.service';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { UpdateTicketDto } from './dto/update-ticket.dto';
 import { QueryTicketDto } from './dto/query-ticket.dto';
+import { SubmitCsatDto } from './dto/submit-csat.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -38,6 +39,12 @@ export class TicketsController {
     return this.ticketsService.getStats(user);
   }
 
+  @Get('csat-stats')
+  @Roles('ADMIN', 'AGENT')
+  getCsatStats() {
+    return this.ticketsService.getCsatStats();
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string, @CurrentUser() user: any) {
     return this.ticketsService.findOne(id, user);
@@ -46,6 +53,11 @@ export class TicketsController {
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdateTicketDto, @CurrentUser() user: any) {
     return this.ticketsService.update(id, dto, user);
+  }
+
+  @Post(':id/csat')
+  submitCsat(@Param('id') id: string, @Body() dto: SubmitCsatDto, @CurrentUser() user: any) {
+    return this.ticketsService.submitCsat(id, dto, user);
   }
 
   @Delete(':id')
