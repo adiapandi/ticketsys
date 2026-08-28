@@ -13,8 +13,8 @@ export class UsersController {
 
   @Post()
   @Roles('ADMIN')
-  create(@Body() dto: CreateUserDto) {
-    return this.usersService.create(dto);
+  create(@Body() dto: CreateUserDto, @CurrentUser() user: any) {
+    return this.usersService.create(dto, user.userId);
   }
 
   @Get()
