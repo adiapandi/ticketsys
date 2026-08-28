@@ -63,6 +63,27 @@ export class AuthService {
     return { message: 'Password berhasil diubah' };
   }
 
+  async updateProfile(userId: string, dto: UpdateProfileDto) {
+    if (dto.email) {
+      const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
+      if (existing && existing.id !== userId) {
+        throw new ConflictException('Email sudah dipakai user lain');
+      }
+    }
+
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        name: dto.name,
+        email: dto.email,
+        phone: dto.phone,
+      },
+      select: { id: true, email: true, name: true, phone: true, role: true },
+    });
+
+    return updated;
+  }
+
   private buildAuthResponse(user: { id: string; email: string; name: string; role: string }) {
     const payload = { sub: user.id, email: user.email, role: user.role };
     return {
