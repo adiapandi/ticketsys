@@ -1,12 +1,13 @@
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { NotificationBell } from '../components/NotificationBell';
+import { ThemeToggle } from '../components/ThemeToggle';
 import { Avatar } from '../components/Avatar';
 
 const roleBadgeColor: Record<string, string> = {
-  ADMIN: 'bg-red-100 text-red-700',
-  AGENT: 'bg-blue-100 text-blue-700',
-  CUSTOMER: 'bg-slate-100 text-slate-700',
+  ADMIN: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
+  AGENT: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+  CUSTOMER: 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300',
 };
 
 export function MainLayout() {
@@ -20,44 +21,43 @@ export function MainLayout() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between">
-        <Link to="/" className="text-lg font-semibold text-slate-800">
+      <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 py-3 flex items-center justify-between transition-colors">
+        <Link to="/" className="text-lg font-semibold text-slate-800 dark:text-slate-100">
           🎫 Ticketing System
         </Link>
         <div className="flex items-center gap-4">
           {user && (
             <>
-              <Link to="/tickets/new" className="text-sm text-blue-600 hover:underline">
+              <Link to="/tickets/new" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
                 + Ticket Baru
               </Link>
               {(user.role === 'ADMIN' || user.role === 'AGENT') && (
-                <Link to="/admin/csat" className="text-sm text-slate-500 hover:text-slate-700">
+                <Link to="/admin/csat" className="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
                   CSAT
                 </Link>
               )}
               {user.role === 'ADMIN' && (
                 <>
-                  <Link to="/admin/categories" className="text-sm text-slate-500 hover:text-slate-700">
+                  <Link to="/admin/categories" className="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
                     Kategori
                   </Link>
-                  <Link to="/admin/users" className="text-sm text-slate-500 hover:text-slate-700">
+                  <Link to="/admin/users" className="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
                     User
                   </Link>
                 </>
               )}
+              <ThemeToggle />
               <NotificationBell />
-              <Link to="/profile" className="flex items-center gap-2 text-sm text-slate-600 hover:text-blue-600">
-              <Avatar name={user.name} avatarUrl={user.avatarUrl} size={28} />
-              {user.name}
+              <Link to="/profile" className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400">
+                <Avatar name={user.name} avatarUrl={user.avatarUrl} size={28} />
+                {user.name}
               </Link>
-              <span
-                className={`text-xs px-2 py-0.5 rounded-full font-medium ${roleBadgeColor[user.role]}`}
-              >
+              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${roleBadgeColor[user.role]}`}>
                 {user.role}
               </span>
               <button
                 onClick={handleLogout}
-                className="text-sm text-slate-500 hover:text-red-600"
+                className="text-sm text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400"
               >
                 Logout
               </button>
