@@ -30,6 +30,11 @@ export function MainLayout() {
               <Link to="/tickets/new" className="text-sm text-blue-600 hover:underline">
                 + Ticket Baru
               </Link>
+              {(user.role === 'ADMIN' || user.role === 'AGENT') && (
+                <Link to="/admin/csat" className="text-sm text-slate-500 hover:text-slate-700">
+                  CSAT
+                </Link>
+              )}
               {user.role === 'ADMIN' && (
                 <>
                   <Link to="/admin/categories" className="text-sm text-slate-500 hover:text-slate-700">
