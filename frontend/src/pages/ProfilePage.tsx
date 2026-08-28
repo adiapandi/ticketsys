@@ -1,6 +1,8 @@
 import { useState, FormEvent } from 'react';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import { useState, FormEvent, useRef } from 'react';
+import { Avatar } from '../components/Avatar';
 
 export function ProfilePage() {
   const { user, updateUser } = useAuth();
@@ -18,6 +20,29 @@ export function ProfilePage() {
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
   const [savingPassword, setSavingPassword] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [avatarError, setAvatarError] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarError('');
+    setUploadingAvatar(true);
+    try {
+      const formData = new FormData();
+      formData.append('avatar', file);
+      const { data } = await api.post('/auth/avatar', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      updateUser(data);
+    } catch (err: any) {
+      setAvatarError(err.response?.data?.message || 'Gagal upload foto');
+    } finally {
+      setUploadingAvatar(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  }
 
   async function handleProfileSubmit(e: FormEvent) {
     e.preventDefault();
@@ -64,6 +89,28 @@ export function ProfilePage() {
       <div>
         <h1 className="text-xl font-semibold">Profil Saya</h1>
         <p className="text-sm text-slate-500">Kelola informasi akun kamu.</p>
+      </div>
+
+      <div className="bg-white border border-slate-200 rounded-lg p-5">
+        <h2 className="text-sm font-semibold text-slate-700 mb-3">Foto Profil</h2>
+        <div className="flex items-center gap-4">
+          <Avatar name={user?.name || ''} avatarUrl={user?.avatarUrl} size={64} />
+          <div>
+            <label className="text-sm text-blue-600 hover:underline cursor-pointer">
+              {uploadingAvatar ? 'Mengunggah...' : 'Ganti Foto'}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarChange}
+                disabled={uploadingAvatar}
+              />
+            </label>
+            <p className="text-xs text-slate-400 mt-1">PNG/JPEG/GIF/WEBP, maks 3MB.</p>
+            {avatarError && <p className="text-xs text-red-600 mt-1">{avatarError}</p>}
+          </div>
+        </div>
       </div>
 
       <div className="bg-white border border-slate-200 rounded-lg p-5">
