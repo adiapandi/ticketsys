@@ -30,9 +30,14 @@ export function MainLayout() {
                 + Ticket Baru
               </Link>
               {user.role === 'ADMIN' && (
-                <Link to="/admin/categories" className="text-sm text-slate-500 hover:text-slate-700">
-                  Kategori
-                </Link>
+                <>
+                  <Link to="/admin/categories" className="text-sm text-slate-500 hover:text-slate-700">
+                    Kategori
+                  </Link>
+                  <Link to="/admin/users" className="text-sm text-slate-500 hover:text-slate-700">
+                    User
+                  </Link>
+                </>
               )}
               <NotificationBell />
               <span className="text-sm text-slate-600">{user.name}</span>
