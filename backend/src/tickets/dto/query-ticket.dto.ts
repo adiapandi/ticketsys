@@ -1,4 +1,5 @@
-import { IsOptional, IsEnum, IsString } from 'class-validator';
+import { IsOptional, IsEnum, IsString, IsInt, Min } from 'class-validator';
+import { Type } from 'class-transformer';
 import { TicketPriority, TicketStatus } from '@prisma/client';
 
 export class QueryTicketDto {
@@ -17,4 +18,24 @@ export class QueryTicketDto {
   @IsOptional()
   @IsString()
   search?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  limit?: number;
+
+  @IsOptional()
+  @IsString()
+  sortBy?: string;
+
+  @IsOptional()
+  @IsString()
+  order?: 'asc' | 'desc';
 }
