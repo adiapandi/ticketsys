@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, FormEvent } from 'react';
 import { Navigate } from 'react-router-dom';
 import { usersManagementApi, AppUser } from '../api/users';
 import { useAuth } from '../context/AuthContext';
@@ -15,6 +15,13 @@ export function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const [showForm, setShowForm] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newEmail, setNewEmail] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [newRole, setNewRole] = useState('CUSTOMER');
+  const [creating, setCreating] = useState(false);
+
   async function load() {
     const { data } = await usersManagementApi.list();
     setUsers(data);
@@ -27,6 +34,30 @@ export function UsersPage() {
 
   if (currentUser?.role !== 'ADMIN') {
     return <Navigate to="/" replace />;
+  }
+
+  async function handleCreate(e: FormEvent) {
+    e.preventDefault();
+    setError('');
+    setCreating(true);
+    try {
+      await usersManagementApi.create({
+        name: newName,
+        email: newEmail,
+        password: newPassword,
+        role: newRole,
+      });
+      setNewName('');
+      setNewEmail('');
+      setNewPassword('');
+      setNewRole('CUSTOMER');
+      setShowForm(false);
+      await load();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Gagal membuat user');
+    } finally {
+      setCreating(false);
+    }
   }
 
   async function handleRoleChange(id: string, role: string) {
@@ -52,10 +83,77 @@ export function UsersPage() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-xl font-semibold">Kelola User</h1>
-        <p className="text-sm text-slate-500">Atur role dan akses tiap user.</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold">Kelola User</h1>
+          <p className="text-sm text-slate-500">Atur role dan akses tiap user.</p>
+        </div>
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className="bg-blue-600 text-white text-sm px-4 py-2 rounded-md hover:bg-blue-700"
+        >
+          {showForm ? 'Batal' : '+ Tambah User'}
+        </button>
       </div>
+
+      {showForm && (
+        <form
+          onSubmit={handleCreate}
+          className="bg-white border border-slate-200 rounded-lg p-4 space-y-3"
+        >
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs text-slate-500">Nama</label>
+              <input
+                required
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                className="w-full mt-1 px-3 py-1.5 border border-slate-300 rounded-md text-sm"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-slate-500">Email</label>
+              <input
+                type="email"
+                required
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                className="w-full mt-1 px-3 py-1.5 border border-slate-300 rounded-md text-sm"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-slate-500">Password (min. 6 karakter)</label>
+              <input
+                type="password"
+                required
+                minLength={6}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="w-full mt-1 px-3 py-1.5 border border-slate-300 rounded-md text-sm"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-slate-500">Role</label>
+              <select
+                value={newRole}
+                onChange={(e) => setNewRole(e.target.value)}
+                className="w-full mt-1 px-3 py-1.5 border border-slate-300 rounded-md text-sm"
+              >
+                <option value="CUSTOMER">CUSTOMER</option>
+                <option value="AGENT">AGENT</option>
+                <option value="ADMIN">ADMIN</option>
+              </select>
+            </div>
+          </div>
+          <button
+            type="submit"
+            disabled={creating}
+            className="bg-blue-600 text-white text-sm px-4 py-1.5 rounded-md hover:bg-blue-700 disabled:opacity-50"
+          >
+            {creating ? 'Membuat...' : 'Buat User'}
+          </button>
+        </form>
+      )}
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
