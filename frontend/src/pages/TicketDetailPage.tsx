@@ -4,6 +4,7 @@ import { ticketsApi, commentsApi, usersApi, Ticket, Comment } from '../api/ticke
 import { StatusBadge, PriorityBadge, SlaBadge } from '../components/Badges';
 import { AttachmentSection } from '../components/AttachmentSection';
 import { AuditLogList } from '../components/AuditLogList';
+import { CsatRating } from '../components/CsatRating';
 import { useAuth } from '../context/AuthContext';
 
 const STATUS_OPTIONS = ['OPEN', 'IN_PROGRESS', 'PENDING', 'RESOLVED', 'CLOSED'];
@@ -141,6 +142,34 @@ export function TicketDetailPage() {
         </div>
 
         <AttachmentSection ticketId={ticket.id} canDelete={isStaff} />
+
+        {!isStaff && ['RESOLVED', 'CLOSED'].includes(ticket.status) && (
+          <CsatRating
+            ticketId={ticket.id}
+            existingRating={ticket.csatRating}
+            existingComment={ticket.csatComment}
+            onSubmitted={load}
+          />
+        )}
+
+        {isStaff && ticket.csatRating && (
+          <div className="bg-white border border-slate-200 rounded-lg p-5">
+            <h2 className="text-sm font-semibold text-slate-700 mb-2">Rating dari Requester</h2>
+            <div className="flex gap-1 text-xl">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <span
+                  key={star}
+                  className={star <= (ticket.csatRating || 0) ? 'text-yellow-400' : 'text-slate-200'}
+                >
+                  ★
+                </span>
+              ))}
+            </div>
+            {ticket.csatComment && (
+              <p className="text-sm text-slate-600 mt-2 italic">"{ticket.csatComment}"</p>
+            )}
+          </div>
+        )}
 
         {isStaff && <AuditLogList ticketId={ticket.id} />}
       </div>
