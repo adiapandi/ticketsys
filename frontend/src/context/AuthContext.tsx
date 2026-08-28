@@ -6,6 +6,7 @@ interface User {
   email: string;
   name: string;
   phone?: string | null;
+  avatarUrl?: string | null;
   role: 'ADMIN' | 'AGENT' | 'CUSTOMER';
 }
 
