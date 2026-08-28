@@ -1,5 +1,5 @@
 import { useState, FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export function LoginPage() {
@@ -60,13 +60,6 @@ export function LoginPage() {
             {isLoading ? 'Memproses...' : 'Masuk'}
           </button>
         </form>
-
-        <p className="text-sm text-slate-500 mt-4 text-center">
-          Belum punya akun?{' '}
-          <Link to="/register" className="text-blue-600 hover:underline">
-            Daftar
-          </Link>
-        </p>
       </div>
     </div>
   );
