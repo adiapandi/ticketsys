@@ -11,6 +11,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { AttachmentsModule } from './attachments/attachments.module';
 import { SlaModule } from './sla/sla.module';
 import { CategoriesModule } from './categories/categories.module';
+import { AuditLogModule } from './audit-log/audit-log.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { CategoriesModule } from './categories/categories.module';
     MailModule,
     NotificationsModule,
     SlaModule,
+    AuditLogModule,
     AuthModule,
     UsersModule,
     TicketsModule,
