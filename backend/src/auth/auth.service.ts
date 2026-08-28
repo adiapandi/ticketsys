@@ -85,6 +85,16 @@ export class AuthService {
     return updated;
   }
 
+  async updateAvatar(userId: string, file: Express.Multer.File) {
+    const avatarUrl = `/uploads/avatars/${file.filename}`;
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: { avatarUrl },
+      select: { id: true, email: true, name: true, phone: true, avatarUrl: true, role: true },
+    });
+    return updated;
+  }
+  
   private buildAuthResponse(user: { id: string; email: string; name: string; phone?: string | null; role: string }) {
     const payload = { sub: user.id, email: user.email, role: user.role };
     return {
