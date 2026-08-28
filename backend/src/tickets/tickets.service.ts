@@ -104,18 +104,37 @@ export class TicketsService {
       ];
     }
 
-    const tickets = await this.prisma.ticket.findMany({
-      where,
-      include: {
-        requester: { select: { id: true, name: true, email: true } },
-        assignee: { select: { id: true, name: true, email: true } },
-        category: true,
-        _count: { select: { comments: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+    const page = query.page && query.page > 0 ? query.page : 1;
+    const limit = query.limit && query.limit > 0 ? query.limit : 20;
+    const skip = (page - 1) * limit;
 
-    return tickets.map((t) => ({ ...t, isOverdue: this.isOverdue(t) }));
+    const sortableFields = ['createdAt', 'updatedAt', 'resolutionDueAt', 'title'];
+    const sortBy = sortableFields.includes(query.sortBy || '') ? (query.sortBy as string) : 'createdAt';
+    const order = query.order === 'asc' ? 'asc' : 'desc';
+
+    const [tickets, total] = await Promise.all([
+      this.prisma.ticket.findMany({
+        where,
+        include: {
+          requester: { select: { id: true, name: true, email: true } },
+          assignee: { select: { id: true, name: true, email: true } },
+          category: true,
+          _count: { select: { comments: true } },
+        },
+        orderBy: { [sortBy]: order },
+        skip,
+        take: limit,
+      }),
+      this.prisma.ticket.count({ where }),
+    ]);
+
+    return {
+      data: tickets.map((t) => ({ ...t, isOverdue: this.isOverdue(t) })),
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit) || 1,
+    };
   }
 
   async findOne(id: string, user: AuthUser) {
