@@ -7,6 +7,7 @@ import { TicketStatus } from '@prisma/client';
 import { MailService } from '../mail/mail.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { SlaService } from '../sla/sla.service';
+import { AuditLogService } from '../audit-log/audit-log.service';
 
 interface AuthUser {
   userId: string;
@@ -21,6 +22,7 @@ export class TicketsService {
     private mailService: MailService,
     private notificationsService: NotificationsService,
     private slaService: SlaService,
+    private auditLogService: AuditLogService,
   ) {}
 
   async create(dto: CreateTicketDto, user: AuthUser) {
@@ -28,8 +30,6 @@ export class TicketsService {
     const { firstResponseDueAt, resolutionDueAt } = this.slaService.computeDueDates(priority);
 
     const isStaff = user.role === 'ADMIN' || user.role === 'AGENT';
-    // Staff bisa bikin ticket "atas nama" user lain (kerjaan udah selesai duluan, baru dicatat).
-    // Customer selalu jadi requester untuk dirinya sendiri.
     const requesterId = isStaff && dto.requestedForUserId ? dto.requestedForUserId : user.userId;
     const assigneeId = isStaff && dto.assigneeId ? dto.assigneeId : undefined;
 
@@ -47,8 +47,13 @@ export class TicketsService {
       include: { requester: true, category: true },
     });
 
-    // Notifikasi ke semua agent & admin bahwa ada ticket baru masuk
-    // (kalau ticket langsung di-assign saat dibuat, assignee tidak perlu dobel notif "ticket baru")
+    await this.auditLogService.log(
+      'TICKET_CREATED',
+      `Ticket dibuat: "${ticket.title}"`,
+      user.userId,
+      ticket.id,
+    );
+
     const staff = await this.prisma.user.findMany({
       where: { role: { in: ['AGENT', 'ADMIN'] }, id: { not: assigneeId } },
       select: { id: true, email: true },
@@ -67,7 +72,6 @@ export class TicketsService {
       ),
     );
 
-    // Kalau langsung di-assign saat dibuat, kirim notif assignment ke yang ditugaskan
     if (assigneeId) {
       const assignee = await this.prisma.user.findUnique({ where: { id: assigneeId } });
       if (assignee) {
@@ -80,6 +84,12 @@ export class TicketsService {
           ),
           this.mailService.sendTicketAssigned(assignee.email, ticket.title, ticket.id),
         ]);
+        await this.auditLogService.log(
+          'ASSIGNED',
+          `Ticket di-assign ke ${assignee.name} (saat dibuat)`,
+          user.userId,
+          ticket.id,
+        );
       }
     }
 
@@ -89,7 +99,6 @@ export class TicketsService {
   async findAll(query: QueryTicketDto, user: AuthUser) {
     const where: any = {};
 
-    // Customer hanya bisa lihat tiket milik sendiri
     if (user.role === 'CUSTOMER') {
       where.requesterId = user.userId;
     }
@@ -174,7 +183,6 @@ export class TicketsService {
     });
     if (!ticket) throw new NotFoundException('Ticket tidak ditemukan');
 
-    // Customer hanya boleh edit title/description miliknya sendiri, tidak boleh ubah status/assignee
     if (user.role === 'CUSTOMER') {
       if (ticket.requesterId !== user.userId) {
         throw new ForbiddenException('Kamu tidak punya akses ke ticket ini');
@@ -191,7 +199,6 @@ export class TicketsService {
       data.closedAt = new Date();
     }
 
-    // Priority diubah manual (bukan hasil auto-escalate SLA) → hitung ulang due date dari sekarang
     if (dto.priority && dto.priority !== ticket.priority) {
       const { firstResponseDueAt, resolutionDueAt } = this.slaService.computeDueDates(dto.priority);
       data.firstResponseDueAt = firstResponseDueAt;
@@ -209,7 +216,6 @@ export class TicketsService {
       },
     });
 
-    // Notif ke requester kalau status berubah
     if (dto.status && dto.status !== ticket.status) {
       await Promise.all([
         this.notificationsService.create(
@@ -224,10 +230,24 @@ export class TicketsService {
           ticket.id,
           dto.status,
         ),
+        this.auditLogService.log(
+          'STATUS_CHANGED',
+          `Status diubah dari ${ticket.status.replace('_', ' ')} menjadi ${dto.status.replace('_', ' ')}`,
+          user.userId,
+          ticket.id,
+        ),
       ]);
     }
 
-    // Notif ke agent yang baru di-assign (kalau assignee berubah dan bukan di-unassign)
+    if (dto.priority && dto.priority !== ticket.priority) {
+      await this.auditLogService.log(
+        'PRIORITY_CHANGED',
+        `Priority diubah dari ${ticket.priority} menjadi ${dto.priority}`,
+        user.userId,
+        ticket.id,
+      );
+    }
+
     if (dto.assigneeId && dto.assigneeId !== ticket.assigneeId) {
       const newAssignee = await this.prisma.user.findUnique({ where: { id: dto.assigneeId } });
       if (newAssignee) {
@@ -239,6 +259,12 @@ export class TicketsService {
             ticket.id,
           ),
           this.mailService.sendTicketAssigned(newAssignee.email, ticket.title, ticket.id),
+          this.auditLogService.log(
+            'ASSIGNED',
+            `Ticket di-assign ke ${newAssignee.name}`,
+            user.userId,
+            ticket.id,
+          ),
         ]);
       }
     }
