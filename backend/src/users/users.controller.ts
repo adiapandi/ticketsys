@@ -27,9 +27,14 @@ export class UsersController {
     return this.usersService.findOne(id);
   }
 
-  @Patch(':id/role')
-  @Roles('ADMIN')
-  updateRole(@Param('id') id: string, @Body('role') role: 'ADMIN' | 'AGENT' | 'CUSTOMER') {
-    return this.usersService.updateRole(id, role);
+@Patch(':id/role')
+@Roles('ADMIN')
+updateRole(
+  @Param('id') id: string,
+  @Body('role') role: 'ADMIN' | 'AGENT' | 'CUSTOMER',
+  @CurrentUser() user: any,
+) {
+  return this.usersService.updateRole(id, role, user.userId);
+}
   }
 }
