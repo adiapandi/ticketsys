@@ -147,3 +147,16 @@ model Notification {
 
   @@map("notifications")
 }
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  action      String
+  description String
+  createdAt   DateTime @default(now())
+
+  userId   String?
+  userName String
+  ticketId String?
+
+  @@map("audit_logs")
+}
