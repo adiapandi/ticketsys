@@ -1,9 +1,10 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -24,7 +25,6 @@ export class AuthService {
         email: dto.email,
         password: hashed,
         name: dto.name,
-        // Role default CUSTOMER; admin/agent hanya bisa dinaikkan lewat endpoint khusus admin
       },
     });
 
@@ -43,6 +43,24 @@ export class AuthService {
     }
 
     return this.buildAuthResponse(user);
+  }
+
+  async changePassword(userId: string, dto: ChangePasswordDto) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User tidak ditemukan');
+
+    const currentMatch = await bcrypt.compare(dto.currentPassword, user.password);
+    if (!currentMatch) {
+      throw new BadRequestException('Password saat ini salah');
+    }
+
+    const hashed = await bcrypt.hash(dto.newPassword, 10);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { password: hashed },
+    });
+
+    return { message: 'Password berhasil diubah' };
   }
 
   private buildAuthResponse(user: { id: string; email: string; name: string; role: string }) {
