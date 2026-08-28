@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { UpdateTicketDto } from './dto/update-ticket.dto';
@@ -8,6 +8,7 @@ import { MailService } from '../mail/mail.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { SlaService } from '../sla/sla.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
+import { SubmitCsatDto } from './dto/submit-csat.dto';
 
 interface AuthUser {
   userId: string;
@@ -278,6 +279,70 @@ export class TicketsService {
     return this.prisma.ticket.delete({ where: { id } });
   }
 
+  async submitCsat(id: string, dto: SubmitCsatDto, user: AuthUser) {
+    const ticket = await this.prisma.ticket.findUnique({ where: { id } });
+    if (!ticket) throw new NotFoundException('Ticket tidak ditemukan');
+
+    if (ticket.requesterId !== user.userId) {
+      throw new ForbiddenException('Hanya pembuat ticket yang bisa memberi rating');
+    }
+    if (!['RESOLVED', 'CLOSED'].includes(ticket.status)) {
+      throw new BadRequestException('Ticket harus berstatus Resolved/Closed untuk diberi rating');
+    }
+    if (ticket.csatRating) {
+      throw new BadRequestException('Ticket ini sudah pernah diberi rating');
+    }
+
+    const updated = await this.prisma.ticket.update({
+      where: { id },
+      data: {
+        csatRating: dto.rating,
+        csatComment: dto.comment,
+        csatSubmittedAt: new Date(),
+      },
+    });
+
+    await this.auditLogService.log(
+      'CSAT_SUBMITTED',
+      `Rating diberikan: ${dto.rating}/5`,
+      user.userId,
+      id,
+    );
+
+    return updated;
+  }
+
+  async getCsatStats() {
+    const rated = await this.prisma.ticket.findMany({
+      where: { csatRating: { not: null } },
+      select: {
+        id: true,
+        title: true,
+        csatRating: true,
+        csatComment: true,
+        csatSubmittedAt: true,
+        requester: { select: { name: true } },
+      },
+      orderBy: { csatSubmittedAt: 'desc' },
+    });
+
+    const total = rated.length;
+    const average = total > 0 ? rated.reduce((sum, t) => sum + (t.csatRating || 0), 0) / total : 0;
+    const distribution = [1, 2, 3, 4, 5].map((star) => ({
+      star,
+      count: rated.filter((t) => t.csatRating === star).length,
+    }));
+
+    return {
+      total,
+      average: Math.round(average * 10) / 10,
+      distribution,
+      recent: rated.slice(0, 20),
+    };
+  }
+
+</parameter>
+  
   async getStats(user: AuthUser) {
     const where: any = user.role === 'CUSTOMER' ? { requesterId: user.userId } : {};
     const [open, inProgress, resolved, closed, total] = await Promise.all([
