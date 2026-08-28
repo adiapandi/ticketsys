@@ -85,7 +85,7 @@ export class AuthService {
     return updated;
   }
 
-  private buildAuthResponse(user: { id: string; email: string; name: string; role: string }) {
+  private buildAuthResponse(user: { id: string; email: string; name: string; phone?: string | null; role: string }) {
     const payload = { sub: user.id, email: user.email, role: user.role };
     return {
       accessToken: this.jwtService.sign(payload),
@@ -93,6 +93,7 @@ export class AuthService {
         id: user.id,
         email: user.email,
         name: user.name,
+        phone: user.phone,
         role: user.role,
       },
     };
