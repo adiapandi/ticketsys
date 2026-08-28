@@ -32,7 +32,7 @@ export function DashboardPage() {
     if (statusFilter) params.status = statusFilter;
     if (search) params.search = search;
     const { data } = await ticketsApi.list(params);
-    setTickets(data);
+    setTickets(data.data);
     setLoading(false);
   }
 
