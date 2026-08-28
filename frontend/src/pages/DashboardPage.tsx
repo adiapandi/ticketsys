@@ -51,11 +51,11 @@ export function DashboardPage() {
   }
 
   const cards = [
-    { label: 'Total', value: stats?.total, color: 'text-slate-800' },
-    { label: 'Open', value: stats?.open, color: 'text-yellow-600' },
-    { label: 'In Progress', value: stats?.inProgress, color: 'text-blue-600' },
-    { label: 'Resolved', value: stats?.resolved, color: 'text-green-600' },
-    { label: 'Closed', value: stats?.closed, color: 'text-slate-500' },
+    { label: 'Total', value: stats?.total, color: 'text-slate-800', status: '' },
+    { label: 'Open', value: stats?.open, color: 'text-yellow-600', status: 'OPEN' },
+    { label: 'In Progress', value: stats?.inProgress, color: 'text-blue-600', status: 'IN_PROGRESS' },
+    { label: 'Resolved', value: stats?.resolved, color: 'text-green-600', status: 'RESOLVED' },
+    { label: 'Closed', value: stats?.closed, color: 'text-slate-500', status: 'CLOSED' },
   ];
 
   return (
@@ -67,10 +67,18 @@ export function DashboardPage() {
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {cards.map((c) => (
-          <div key={c.label} className="bg-white border border-slate-200 rounded-lg p-4">
+          <button
+            key={c.label}
+            onClick={() => setStatusFilter(c.status)}
+            className={`text-left bg-white border rounded-lg p-4 transition-colors ${
+              statusFilter === c.status
+                ? 'border-blue-500 ring-1 ring-blue-500'
+                : 'border-slate-200 hover:border-slate-300'
+            }`}
+          >
             <p className="text-xs text-slate-500">{c.label}</p>
             <p className={`text-2xl font-semibold ${c.color}`}>{c.value ?? '-'}</p>
-          </div>
+          </button>
         ))}
       </div>
 
@@ -134,15 +142,4 @@ export function DashboardPage() {
                     oleh {t.requester.name} · {new Date(t.createdAt).toLocaleDateString('id-ID')}
                   </p>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <SlaBadge isOverdue={t.isOverdue} resolutionDueAt={t.resolutionDueAt} />
-                  <PriorityBadge priority={t.priority} />
-                  <StatusBadge status={t.status} />
-                </div>
-              </Link>
-            ))}
-        </div>
-      </div>
-    </div>
-  );
-}
+                <div className="flex
