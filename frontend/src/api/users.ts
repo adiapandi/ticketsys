@@ -11,6 +11,8 @@ export interface AppUser {
 
 export const usersManagementApi = {
   list: () => api.get<AppUser[]>('/users'),
+  create: (data: { email: string; password: string; name: string; role: string }) =>
+    api.post<AppUser>('/users', data),
   updateRole: (id: string, role: 'ADMIN' | 'AGENT' | 'CUSTOMER') =>
     api.patch<AppUser>(`/users/${id}/role`, { role }),
   remove: (id: string) => api.delete(`/users/${id}`),
