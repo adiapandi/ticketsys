@@ -142,4 +142,15 @@ export function DashboardPage() {
                     oleh {t.requester.name} · {new Date(t.createdAt).toLocaleDateString('id-ID')}
                   </p>
                 </div>
-                <div className="flex
+                <div className="flex items-center gap-2 shrink-0">
+                  <SlaBadge isOverdue={t.isOverdue} resolutionDueAt={t.resolutionDueAt} />
+                  <PriorityBadge priority={t.priority} />
+                  <StatusBadge status={t.status} />
+                </div>
+              </Link>
+            ))}
+        </div>
+      </div>
+    </div>
+  );
+}
