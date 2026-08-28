@@ -72,6 +72,9 @@ model Ticket {
   firstRespondedAt   DateTime?
   slaBreached        Boolean   @default(false)
   escalated          Boolean   @default(false)
+  csatRating         Int?
+  csatComment        String?
+  csatSubmittedAt    DateTime?
 
   requesterId String
   requester   User   @relation("TicketRequester", fields: [requesterId], references: [id])
