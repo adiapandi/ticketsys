@@ -5,6 +5,9 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { UpdateProfileDto } from './dto/update-profile.dto';
+import { UseInterceptors, UploadedFile } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { avatarMulterConfig } from './avatar-multer.config';
 
 @Controller('auth')
 export class AuthController {
@@ -28,5 +31,12 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   updateProfile(@Body() dto: UpdateProfileDto, @CurrentUser() user: any) {
     return this.authService.updateProfile(user.userId, dto);
+  }
+
+  @Post('avatar')
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('avatar', avatarMulterConfig))
+  updateAvatar(@UploadedFile() file: Express.Multer.File, @CurrentUser() user: any) {
+    return this.authService.updateAvatar(user.userId, file);
   }
 }
