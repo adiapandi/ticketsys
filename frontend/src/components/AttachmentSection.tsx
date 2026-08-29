@@ -67,12 +67,12 @@ export function AttachmentSection({ ticketId, canDelete }: { ticketId: string; c
   }
 
   return (
-    <div className="bg-white border border-slate-200 rounded-lg">
-      <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-slate-700">
+    <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg">
+      <div className="px-5 py-3 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200">
           Lampiran ({attachments.length})
         </h2>
-        <label className="text-sm text-blue-600 hover:underline cursor-pointer">
+        <label className="text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
           {uploading ? 'Mengunggah...' : '+ Upload File'}
           <input
             ref={fileInputRef}
@@ -84,26 +84,26 @@ export function AttachmentSection({ ticketId, canDelete }: { ticketId: string; c
         </label>
       </div>
 
-      {error && <p className="px-5 py-2 text-xs text-red-600">{error}</p>}
+      {error && <p className="px-5 py-2 text-xs text-red-600 dark:text-red-400">{error}</p>}
 
-      <div className="divide-y divide-slate-100">
+      <div className="divide-y divide-slate-100 dark:divide-slate-700">
         {attachments.length === 0 && (
-          <p className="px-5 py-4 text-sm text-slate-400">Belum ada file dilampirkan.</p>
+          <p className="px-5 py-4 text-sm text-slate-400 dark:text-slate-500">Belum ada file dilampirkan.</p>
         )}
         {attachments.map((a) => (
           <div key={a.id} className="flex items-center justify-between px-5 py-2.5">
             <button
               onClick={() => handleDownload(a)}
-              className="flex items-center gap-2 text-sm text-slate-700 hover:text-blue-600 text-left"
+              className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 text-left"
             >
               <span>{fileIcon(a.mimetype)}</span>
               <span className="truncate max-w-[220px]">{a.filename}</span>
-              <span className="text-xs text-slate-400 shrink-0">{formatSize(a.size)}</span>
+              <span className="text-xs text-slate-400 dark:text-slate-500 shrink-0">{formatSize(a.size)}</span>
             </button>
             {canDelete && (
               <button
                 onClick={() => handleDelete(a.id)}
-                className="text-xs text-slate-400 hover:text-red-600"
+                className="text-xs text-slate-400 dark:text-slate-500 hover:text-red-600 dark:hover:text-red-400"
               >
                 Hapus
               </button>
@@ -111,7 +111,7 @@ export function AttachmentSection({ ticketId, canDelete }: { ticketId: string; c
           </div>
         ))}
       </div>
-      <p className="px-5 py-2 text-xs text-slate-400 border-t border-slate-100">
+      <p className="px-5 py-2 text-xs text-slate-400 dark:text-slate-500 border-t border-slate-100 dark:border-slate-700">
         Maks. 10MB per file. Format: gambar, PDF, Word, Excel, teks, zip.
       </p>
     </div>
