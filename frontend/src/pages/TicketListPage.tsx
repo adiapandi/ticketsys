@@ -62,7 +62,7 @@ export function TicketListPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Semua Tiket</h1>
+        <h1 className="text-xl font-semibold text-slate-800 dark:text-slate-100">Semua Tiket</h1>
         <Link
           to="/tickets/new"
           className="bg-blue-600 text-white text-sm px-4 py-2 rounded-md hover:bg-blue-700"
@@ -71,22 +71,22 @@ export function TicketListPage() {
         </Link>
       </div>
 
-      <div className="flex flex-wrap gap-3 items-end bg-white border border-slate-200 rounded-lg p-4">
+      <div className="flex flex-wrap gap-3 items-end bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4">
         <form onSubmit={handleSearchSubmit} className="flex-1 min-w-[200px]">
-          <label className="text-xs text-slate-500">Cari</label>
+          <label className="text-xs text-slate-500 dark:text-slate-400">Cari</label>
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Cari judul/deskripsi..."
-            className="w-full mt-1 px-3 py-1.5 border border-slate-300 rounded-md text-sm"
+            className="w-full mt-1 px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
           />
         </form>
         <div>
-          <label className="text-xs text-slate-500">Status</label>
+          <label className="text-xs text-slate-500 dark:text-slate-400">Status</label>
           <select
             value={status}
             onChange={(e) => handleFilterChange(setStatus, e.target.value)}
-            className="block mt-1 px-3 py-1.5 border border-slate-300 rounded-md text-sm"
+            className="block mt-1 px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
           >
             {STATUS_OPTIONS.map((s) => (
               <option key={s} value={s}>
@@ -96,11 +96,11 @@ export function TicketListPage() {
           </select>
         </div>
         <div>
-          <label className="text-xs text-slate-500">Priority</label>
+          <label className="text-xs text-slate-500 dark:text-slate-400">Priority</label>
           <select
             value={priority}
             onChange={(e) => handleFilterChange(setPriority, e.target.value)}
-            className="block mt-1 px-3 py-1.5 border border-slate-300 rounded-md text-sm"
+            className="block mt-1 px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
           >
             {PRIORITY_OPTIONS.map((p) => (
               <option key={p} value={p}>
@@ -110,14 +110,14 @@ export function TicketListPage() {
           </select>
         </div>
         <div>
-          <label className="text-xs text-slate-500">Urutkan</label>
+          <label className="text-xs text-slate-500 dark:text-slate-400">Urutkan</label>
           <select
             value={sortIndex}
             onChange={(e) => {
               setSortIndex(Number(e.target.value));
               setPage(1);
             }}
-            className="block mt-1 px-3 py-1.5 border border-slate-300 rounded-md text-sm"
+            className="block mt-1 px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
           >
             {SORT_OPTIONS.map((s, i) => (
               <option key={s.label} value={i}>
@@ -128,20 +128,20 @@ export function TicketListPage() {
         </div>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-lg divide-y divide-slate-100">
-        {loading && <p className="px-4 py-6 text-sm text-slate-400">Memuat...</p>}
+      <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg divide-y divide-slate-100 dark:divide-slate-700">
+        {loading && <p className="px-4 py-6 text-sm text-slate-400 dark:text-slate-500">Memuat...</p>}
         {!loading && tickets.length === 0 && (
-          <p className="px-4 py-6 text-sm text-slate-400">Tidak ada tiket yang cocok.</p>
+          <p className="px-4 py-6 text-sm text-slate-400 dark:text-slate-500">Tidak ada tiket yang cocok.</p>
         )}
         {tickets.map((t) => (
           <Link
             key={t.id}
             to={`/tickets/${t.id}`}
-            className="flex items-center justify-between px-4 py-3 hover:bg-slate-50"
+            className="flex items-center justify-between px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50"
           >
             <div>
-              <p className="text-sm font-medium text-slate-800">{t.title}</p>
-              <p className="text-xs text-slate-500">
+              <p className="text-sm font-medium text-slate-800 dark:text-slate-100">{t.title}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 {t.requester.name} · {t.category?.name || 'Tanpa kategori'} ·{' '}
                 {t.assignee ? `Ditangani oleh ${t.assignee.name}` : 'Belum di-assign'}
               </p>
@@ -156,7 +156,7 @@ export function TicketListPage() {
       </div>
 
       {totalPages > 1 && (
-        <div className="flex items-center justify-between text-sm text-slate-500">
+        <div className="flex items-center justify-between text-sm text-slate-500 dark:text-slate-400">
           <p>
             Halaman {page} dari {totalPages} · {total} ticket total
           </p>
@@ -164,14 +164,14 @@ export function TicketListPage() {
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="px-3 py-1.5 border border-slate-300 rounded-md disabled:opacity-40 hover:bg-slate-50"
+              className="px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded-md disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-700"
             >
               ← Sebelumnya
             </button>
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
-              className="px-3 py-1.5 border border-slate-300 rounded-md disabled:opacity-40 hover:bg-slate-50"
+              className="px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded-md disabled:opacity-40 hover:bg-slate-50 dark:hover:bg-slate-700"
             >
               Selanjutnya →
             </button>
