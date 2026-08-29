@@ -31,7 +31,7 @@ export function NotificationBell() {
 
   useEffect(() => {
     loadUnreadCount();
-    const interval = setInterval(loadUnreadCount, 30000); // poll tiap 30 detik
+    const interval = setInterval(loadUnreadCount, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -69,7 +69,7 @@ export function NotificationBell() {
     <div className="relative" ref={containerRef}>
       <button
         onClick={handleToggle}
-        className="relative text-slate-500 hover:text-slate-700 text-lg"
+        className="relative text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 text-lg"
         aria-label="Notifikasi"
       >
         🔔
@@ -81,32 +81,32 @@ export function NotificationBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-80 bg-white border border-slate-200 rounded-lg shadow-lg z-10">
-          <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-100">
-            <span className="text-sm font-semibold text-slate-700">Notifikasi</span>
+        <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg z-10">
+          <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-100 dark:border-slate-700">
+            <span className="text-sm font-semibold text-slate-700 dark:text-slate-200">Notifikasi</span>
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllRead}
-                className="text-xs text-blue-600 hover:underline"
+                className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
               >
                 Tandai semua dibaca
               </button>
             )}
           </div>
-          <div className="max-h-80 overflow-y-auto divide-y divide-slate-100">
+          <div className="max-h-80 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-700">
             {notifications.length === 0 && (
-              <p className="px-4 py-6 text-sm text-slate-400 text-center">Tidak ada notifikasi.</p>
+              <p className="px-4 py-6 text-sm text-slate-400 dark:text-slate-500 text-center">Tidak ada notifikasi.</p>
             )}
             {notifications.map((n) => (
               <button
                 key={n.id}
                 onClick={() => handleNotificationClick(n)}
-                className={`w-full text-left px-4 py-3 hover:bg-slate-50 ${
-                  !n.isRead ? 'bg-blue-50/50' : ''
+                className={`w-full text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 ${
+                  !n.isRead ? 'bg-blue-50/50 dark:bg-blue-900/20' : ''
                 }`}
               >
-                <p className="text-sm text-slate-700">{n.message}</p>
-                <p className="text-xs text-slate-400 mt-0.5">{timeAgo(n.createdAt)}</p>
+                <p className="text-sm text-slate-700 dark:text-slate-200">{n.message}</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{timeAgo(n.createdAt)}</p>
               </button>
             ))}
           </div>
