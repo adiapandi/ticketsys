@@ -1,7 +1,6 @@
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useRef } from 'react';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
-import { useState, FormEvent, useRef } from 'react';
 import { Avatar } from '../components/Avatar';
 
 export function ProfilePage() {
@@ -20,6 +19,7 @@ export function ProfilePage() {
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
   const [savingPassword, setSavingPassword] = useState(false);
+
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [avatarError, setAvatarError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -87,16 +87,16 @@ export function ProfilePage() {
   return (
     <div className="max-w-md space-y-6">
       <div>
-        <h1 className="text-xl font-semibold">Profil Saya</h1>
-        <p className="text-sm text-slate-500">Kelola informasi akun kamu.</p>
+        <h1 className="text-xl font-semibold text-slate-800 dark:text-slate-100">Profil Saya</h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400">Kelola informasi akun kamu.</p>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-lg p-5">
-        <h2 className="text-sm font-semibold text-slate-700 mb-3">Foto Profil</h2>
+      <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-5">
+        <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Foto Profil</h2>
         <div className="flex items-center gap-4">
           <Avatar name={user?.name || ''} avatarUrl={user?.avatarUrl} size={64} />
           <div>
-            <label className="text-sm text-blue-600 hover:underline cursor-pointer">
+            <label className="text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
               {uploadingAvatar ? 'Mengunggah...' : 'Ganti Foto'}
               <input
                 ref={fileInputRef}
@@ -107,46 +107,46 @@ export function ProfilePage() {
                 disabled={uploadingAvatar}
               />
             </label>
-            <p className="text-xs text-slate-400 mt-1">PNG/JPEG/GIF/WEBP, maks 3MB.</p>
-            {avatarError && <p className="text-xs text-red-600 mt-1">{avatarError}</p>}
+            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">PNG/JPEG/GIF/WEBP, maks 3MB.</p>
+            {avatarError && <p className="text-xs text-red-600 dark:text-red-400 mt-1">{avatarError}</p>}
           </div>
         </div>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-lg p-5">
-        <h2 className="text-sm font-semibold text-slate-700 mb-3">Informasi Akun</h2>
+      <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-5">
+        <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Informasi Akun</h2>
         <form onSubmit={handleProfileSubmit} className="space-y-3">
           <div>
-            <label className="text-sm text-slate-600">Nama</label>
+            <label className="text-sm text-slate-600 dark:text-slate-300">Nama</label>
             <input
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full mt-1 px-3 py-2 border border-slate-300 rounded-md text-sm"
+              className="w-full mt-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
             />
           </div>
           <div>
-            <label className="text-sm text-slate-600">Email</label>
+            <label className="text-sm text-slate-600 dark:text-slate-300">Email</label>
             <input
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full mt-1 px-3 py-2 border border-slate-300 rounded-md text-sm"
+              className="w-full mt-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
             />
           </div>
           <div>
-            <label className="text-sm text-slate-600">No. HP</label>
+            <label className="text-sm text-slate-600 dark:text-slate-300">No. HP</label>
             <input
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="08xxxxxxxxxx"
-              className="w-full mt-1 px-3 py-2 border border-slate-300 rounded-md text-sm"
+              className="w-full mt-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
             />
           </div>
 
-          {profileError && <p className="text-sm text-red-600">{profileError}</p>}
-          {profileSuccess && <p className="text-sm text-green-600">{profileSuccess}</p>}
+          {profileError && <p className="text-sm text-red-600 dark:text-red-400">{profileError}</p>}
+          {profileSuccess && <p className="text-sm text-green-600 dark:text-green-400">{profileSuccess}</p>}
 
           <button
             type="submit"
@@ -158,44 +158,44 @@ export function ProfilePage() {
         </form>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-lg p-5">
-        <h2 className="text-sm font-semibold text-slate-700 mb-3">Ganti Password</h2>
+      <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-5">
+        <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Ganti Password</h2>
         <form onSubmit={handlePasswordSubmit} className="space-y-3">
           <div>
-            <label className="text-sm text-slate-600">Password Saat Ini</label>
+            <label className="text-sm text-slate-600 dark:text-slate-300">Password Saat Ini</label>
             <input
               type="password"
               required
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
-              className="w-full mt-1 px-3 py-2 border border-slate-300 rounded-md text-sm"
+              className="w-full mt-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
             />
           </div>
           <div>
-            <label className="text-sm text-slate-600">Password Baru (min. 6 karakter)</label>
+            <label className="text-sm text-slate-600 dark:text-slate-300">Password Baru (min. 6 karakter)</label>
             <input
               type="password"
               required
               minLength={6}
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full mt-1 px-3 py-2 border border-slate-300 rounded-md text-sm"
+              className="w-full mt-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
             />
           </div>
           <div>
-            <label className="text-sm text-slate-600">Konfirmasi Password Baru</label>
+            <label className="text-sm text-slate-600 dark:text-slate-300">Konfirmasi Password Baru</label>
             <input
               type="password"
               required
               minLength={6}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full mt-1 px-3 py-2 border border-slate-300 rounded-md text-sm"
+              className="w-full mt-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
             />
           </div>
 
-          {passwordError && <p className="text-sm text-red-600">{passwordError}</p>}
-          {passwordSuccess && <p className="text-sm text-green-600">{passwordSuccess}</p>}
+          {passwordError && <p className="text-sm text-red-600 dark:text-red-400">{passwordError}</p>}
+          {passwordSuccess && <p className="text-sm text-green-600 dark:text-green-400">{passwordSuccess}</p>}
 
           <button
             type="submit"
