@@ -4,9 +4,9 @@ import { usersManagementApi, AppUser } from '../api/users';
 import { useAuth } from '../context/AuthContext';
 
 const roleBadgeColor: Record<string, string> = {
-  ADMIN: 'bg-red-100 text-red-700',
-  AGENT: 'bg-blue-100 text-blue-700',
-  CUSTOMER: 'bg-slate-100 text-slate-700',
+  ADMIN: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
+  AGENT: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+  CUSTOMER: 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300',
 };
 
 export function UsersPage() {
@@ -85,8 +85,8 @@ export function UsersPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold">Kelola User</h1>
-          <p className="text-sm text-slate-500">Atur role dan akses tiap user.</p>
+          <h1 className="text-xl font-semibold text-slate-800 dark:text-slate-100">Kelola User</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Atur role dan akses tiap user.</p>
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
@@ -99,45 +99,45 @@ export function UsersPage() {
       {showForm && (
         <form
           onSubmit={handleCreate}
-          className="bg-white border border-slate-200 rounded-lg p-4 space-y-3"
+          className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4 space-y-3"
         >
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs text-slate-500">Nama</label>
+              <label className="text-xs text-slate-500 dark:text-slate-400">Nama</label>
               <input
                 required
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
-                className="w-full mt-1 px-3 py-1.5 border border-slate-300 rounded-md text-sm"
+                className="w-full mt-1 px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
               />
             </div>
             <div>
-              <label className="text-xs text-slate-500">Email</label>
+              <label className="text-xs text-slate-500 dark:text-slate-400">Email</label>
               <input
                 type="email"
                 required
                 value={newEmail}
                 onChange={(e) => setNewEmail(e.target.value)}
-                className="w-full mt-1 px-3 py-1.5 border border-slate-300 rounded-md text-sm"
+                className="w-full mt-1 px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
               />
             </div>
             <div>
-              <label className="text-xs text-slate-500">Password (min. 6 karakter)</label>
+              <label className="text-xs text-slate-500 dark:text-slate-400">Password (min. 6 karakter)</label>
               <input
                 type="password"
                 required
                 minLength={6}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full mt-1 px-3 py-1.5 border border-slate-300 rounded-md text-sm"
+                className="w-full mt-1 px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
               />
             </div>
             <div>
-              <label className="text-xs text-slate-500">Role</label>
+              <label className="text-xs text-slate-500 dark:text-slate-400">Role</label>
               <select
                 value={newRole}
                 onChange={(e) => setNewRole(e.target.value)}
-                className="w-full mt-1 px-3 py-1.5 border border-slate-300 rounded-md text-sm"
+                className="w-full mt-1 px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
               >
                 <option value="CUSTOMER">CUSTOMER</option>
                 <option value="AGENT">AGENT</option>
@@ -155,11 +155,11 @@ export function UsersPage() {
         </form>
       )}
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
-      <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
+      <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-left text-xs text-slate-500 uppercase">
+          <thead className="bg-slate-50 dark:bg-slate-700/50 text-left text-xs text-slate-500 dark:text-slate-400 uppercase">
             <tr>
               <th className="px-4 py-2.5">Nama</th>
               <th className="px-4 py-2.5">Email</th>
@@ -169,30 +169,30 @@ export function UsersPage() {
               <th className="px-4 py-2.5"></th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
             {loading && (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-slate-400">
+                <td colSpan={6} className="px-4 py-6 text-center text-slate-400 dark:text-slate-500">
                   Memuat...
                 </td>
               </tr>
             )}
             {!loading && users.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-slate-400">
+                <td colSpan={6} className="px-4 py-6 text-center text-slate-400 dark:text-slate-500">
                   Tidak ada user.
                 </td>
               </tr>
             )}
             {users.map((u) => (
               <tr key={u.id}>
-                <td className="px-4 py-2.5 font-medium text-slate-800">
+                <td className="px-4 py-2.5 font-medium text-slate-800 dark:text-slate-100">
                   {u.name}
                   {u.id === currentUser?.id && (
-                    <span className="ml-1.5 text-xs text-slate-400">(kamu)</span>
+                    <span className="ml-1.5 text-xs text-slate-400 dark:text-slate-500">(kamu)</span>
                   )}
                 </td>
-                <td className="px-4 py-2.5 text-slate-500">{u.email}</td>
+                <td className="px-4 py-2.5 text-slate-500 dark:text-slate-400">{u.email}</td>
                 <td className="px-4 py-2.5">
                   {u.id === currentUser?.id ? (
                     <span
@@ -204,7 +204,7 @@ export function UsersPage() {
                     <select
                       value={u.role}
                       onChange={(e) => handleRoleChange(u.id, e.target.value)}
-                      className="text-xs border border-slate-300 rounded-md px-2 py-1"
+                      className="text-xs border border-slate-300 dark:border-slate-600 rounded-md px-2 py-1 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
                     >
                       <option value="CUSTOMER">CUSTOMER</option>
                       <option value="AGENT">AGENT</option>
@@ -212,13 +212,13 @@ export function UsersPage() {
                     </select>
                   )}
                 </td>
-                <td className="px-4 py-2.5 text-slate-500">{u._count?.ticketsCreated ?? 0}</td>
-                <td className="px-4 py-2.5 text-slate-500">{u._count?.ticketsAssigned ?? 0}</td>
+                <td className="px-4 py-2.5 text-slate-500 dark:text-slate-400">{u._count?.ticketsCreated ?? 0}</td>
+                <td className="px-4 py-2.5 text-slate-500 dark:text-slate-400">{u._count?.ticketsAssigned ?? 0}</td>
                 <td className="px-4 py-2.5 text-right">
                   {u.id !== currentUser?.id && (
                     <button
                       onClick={() => handleDelete(u.id, u.name)}
-                      className="text-xs text-red-600 hover:underline"
+                      className="text-xs text-red-600 dark:text-red-400 hover:underline"
                     >
                       Hapus
                     </button>
