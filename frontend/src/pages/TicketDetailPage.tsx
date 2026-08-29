@@ -57,69 +57,69 @@ export function TicketDetailPage() {
     await load();
   }
 
-  if (loading) return <p className="text-slate-500">Memuat...</p>;
-  if (!ticket) return <p className="text-red-500">Ticket tidak ditemukan.</p>;
+  if (loading) return <p className="text-slate-500 dark:text-slate-400">Memuat...</p>;
+  if (!ticket) return <p className="text-red-500 dark:text-red-400">Ticket tidak ditemukan.</p>;
 
   return (
     <div className="grid md:grid-cols-3 gap-6">
       <div className="md:col-span-2 space-y-4">
-        <div className="bg-white border border-slate-200 rounded-lg p-5">
+        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-5">
           <div className="flex items-start justify-between gap-4">
-            <h1 className="text-lg font-semibold text-slate-800">{ticket.title}</h1>
+            <h1 className="text-lg font-semibold text-slate-800 dark:text-slate-100">{ticket.title}</h1>
             <div className="flex gap-2 shrink-0">
               <SlaBadge isOverdue={ticket.isOverdue} resolutionDueAt={ticket.resolutionDueAt} />
               <PriorityBadge priority={ticket.priority} />
               <StatusBadge status={ticket.status} />
             </div>
           </div>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             Dibuat oleh {ticket.requester.name} · {new Date(ticket.createdAt).toLocaleString('id-ID')}
           </p>
-          <p className="text-sm text-slate-700 mt-4 whitespace-pre-wrap">{ticket.description}</p>
+          <p className="text-sm text-slate-700 dark:text-slate-200 mt-4 whitespace-pre-wrap">{ticket.description}</p>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-lg">
-          <div className="px-5 py-3 border-b border-slate-100">
-            <h2 className="text-sm font-semibold text-slate-700">
+        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg">
+          <div className="px-5 py-3 border-b border-slate-100 dark:border-slate-700">
+            <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200">
               Percakapan ({ticket.comments.length})
             </h2>
           </div>
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-slate-100 dark:divide-slate-700">
             {ticket.comments.length === 0 && (
-              <p className="px-5 py-6 text-sm text-slate-400">Belum ada komentar.</p>
+              <p className="px-5 py-6 text-sm text-slate-400 dark:text-slate-500">Belum ada komentar.</p>
             )}
             {ticket.comments.map((c) => (
               <div
                 key={c.id}
-                className={`px-5 py-3 ${c.isInternal ? 'bg-amber-50' : ''}`}
+                className={`px-5 py-3 ${c.isInternal ? 'bg-amber-50 dark:bg-amber-900/20' : ''}`}
               >
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-sm font-medium text-slate-800">{c.author.name}</span>
-                  <span className="text-xs text-slate-400">
+                  <span className="text-sm font-medium text-slate-800 dark:text-slate-100">{c.author.name}</span>
+                  <span className="text-xs text-slate-400 dark:text-slate-500">
                     {new Date(c.createdAt).toLocaleString('id-ID')}
                   </span>
                   {c.isInternal && (
-                    <span className="text-xs px-1.5 py-0.5 rounded bg-amber-200 text-amber-800">
+                    <span className="text-xs px-1.5 py-0.5 rounded bg-amber-200 dark:bg-amber-800 text-amber-800 dark:text-amber-200">
                       Internal Note
                     </span>
                   )}
                 </div>
-                <p className="text-sm text-slate-700 whitespace-pre-wrap">{c.body}</p>
+                <p className="text-sm text-slate-700 dark:text-slate-200 whitespace-pre-wrap">{c.body}</p>
               </div>
             ))}
           </div>
 
-          <form onSubmit={handleCommentSubmit} className="p-5 border-t border-slate-100 space-y-2">
+          <form onSubmit={handleCommentSubmit} className="p-5 border-t border-slate-100 dark:border-slate-700 space-y-2">
             <textarea
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
               rows={3}
               placeholder="Tulis balasan..."
-              className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm"
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
             />
             <div className="flex items-center justify-between">
               {isStaff ? (
-                <label className="flex items-center gap-2 text-xs text-slate-500">
+                <label className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                   <input
                     type="checkbox"
                     checked={isInternal}
@@ -153,20 +153,20 @@ export function TicketDetailPage() {
         )}
 
         {isStaff && ticket.csatRating && (
-          <div className="bg-white border border-slate-200 rounded-lg p-5">
-            <h2 className="text-sm font-semibold text-slate-700 mb-2">Rating dari Requester</h2>
+          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-5">
+            <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-2">Rating dari Requester</h2>
             <div className="flex gap-1 text-xl">
               {[1, 2, 3, 4, 5].map((star) => (
                 <span
                   key={star}
-                  className={star <= (ticket.csatRating || 0) ? 'text-yellow-400' : 'text-slate-200'}
+                  className={star <= (ticket.csatRating || 0) ? 'text-yellow-400' : 'text-slate-200 dark:text-slate-600'}
                 >
                   ★
                 </span>
               ))}
             </div>
             {ticket.csatComment && (
-              <p className="text-sm text-slate-600 mt-2 italic">"{ticket.csatComment}"</p>
+              <p className="text-sm text-slate-600 dark:text-slate-300 mt-2 italic">"{ticket.csatComment}"</p>
             )}
           </div>
         )}
@@ -175,15 +175,15 @@ export function TicketDetailPage() {
       </div>
 
       {isStaff && (
-        <div className="bg-white border border-slate-200 rounded-lg p-5 h-fit space-y-4">
-          <h2 className="text-sm font-semibold text-slate-700">Kontrol Tiket</h2>
+        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-5 h-fit space-y-4">
+          <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200">Kontrol Tiket</h2>
 
           <div>
-            <label className="text-xs text-slate-500">Status</label>
+            <label className="text-xs text-slate-500 dark:text-slate-400">Status</label>
             <select
               value={ticket.status}
               onChange={(e) => handleFieldUpdate('status', e.target.value)}
-              className="w-full mt-1 px-3 py-1.5 border border-slate-300 rounded-md text-sm"
+              className="w-full mt-1 px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
             >
               {STATUS_OPTIONS.map((s) => (
                 <option key={s} value={s}>
@@ -194,11 +194,11 @@ export function TicketDetailPage() {
           </div>
 
           <div>
-            <label className="text-xs text-slate-500">Priority</label>
+            <label className="text-xs text-slate-500 dark:text-slate-400">Priority</label>
             <select
               value={ticket.priority}
               onChange={(e) => handleFieldUpdate('priority', e.target.value)}
-              className="w-full mt-1 px-3 py-1.5 border border-slate-300 rounded-md text-sm"
+              className="w-full mt-1 px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
             >
               {PRIORITY_OPTIONS.map((p) => (
                 <option key={p} value={p}>
@@ -209,11 +209,11 @@ export function TicketDetailPage() {
           </div>
 
           <div>
-            <label className="text-xs text-slate-500">Assign ke</label>
+            <label className="text-xs text-slate-500 dark:text-slate-400">Assign ke</label>
             <select
               value={ticket.assignee?.id || ''}
               onChange={(e) => handleFieldUpdate('assigneeId', e.target.value)}
-              className="w-full mt-1 px-3 py-1.5 border border-slate-300 rounded-md text-sm"
+              className="w-full mt-1 px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
             >
               <option value="">Belum di-assign</option>
               {agents.map((a) => (
@@ -225,15 +225,15 @@ export function TicketDetailPage() {
           </div>
 
           {ticket.resolutionDueAt && (
-            <div className="pt-2 border-t border-slate-100 space-y-1">
-              <p className="text-xs text-slate-500">
+            <div className="pt-2 border-t border-slate-100 dark:border-slate-700 space-y-1">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 Target resolusi:{' '}
-                <span className={ticket.isOverdue ? 'text-red-600 font-medium' : 'text-slate-700'}>
+                <span className={ticket.isOverdue ? 'text-red-600 dark:text-red-400 font-medium' : 'text-slate-700 dark:text-slate-300'}>
                   {new Date(ticket.resolutionDueAt).toLocaleString('id-ID')}
                 </span>
               </p>
               {ticket.escalated && (
-                <p className="text-xs text-orange-600">⚠ Ticket ini pernah di-escalate karena SLA breach</p>
+                <p className="text-xs text-orange-600 dark:text-orange-400">⚠ Ticket ini pernah di-escalate karena SLA breach</p>
               )}
             </div>
           )}
