@@ -19,7 +19,6 @@ export function CreateTicketPage() {
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  // Cuma dipakai kalau yang bikin ticket staff (agent/admin)
   const [allUsers, setAllUsers] = useState<AppUser[]>([]);
   const [agents, setAgents] = useState<{ id: string; name: string; email: string }[]>([]);
   const [requestedForUserId, setRequestedForUserId] = useState('');
@@ -31,7 +30,6 @@ export function CreateTicketPage() {
       usersManagementApi.list().then((res) => setAllUsers(res.data));
       usersApi.agents().then((res) => {
         setAgents(res.data);
-        // Default assign ke diri sendiri, karena biasanya staff yang bikin ticket = yang ngerjain
         if (currentUser) setAssigneeId(currentUser.id);
       });
     }
@@ -57,7 +55,6 @@ export function CreateTicketPage() {
           assigneeId: assigneeId || undefined,
         }),
       });
-      // Upload lampiran satu-satu setelah ticket berhasil dibuat
       for (const file of files) {
         await attachmentsApi.upload(data.id, file);
       }
@@ -71,38 +68,38 @@ export function CreateTicketPage() {
 
   return (
     <div className="max-w-xl">
-      <h1 className="text-xl font-semibold mb-4">Buat Tiket Baru</h1>
+      <h1 className="text-xl font-semibold mb-4 text-slate-800 dark:text-slate-100">Buat Tiket Baru</h1>
       <form
         onSubmit={handleSubmit}
-        className="bg-white border border-slate-200 rounded-lg p-6 space-y-4"
+        className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-6 space-y-4"
       >
         <div>
-          <label className="text-sm text-slate-600">Judul</label>
+          <label className="text-sm text-slate-600 dark:text-slate-300">Judul</label>
           <input
             required
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Ringkasan singkat masalah"
-            className="w-full mt-1 px-3 py-2 border border-slate-300 rounded-md text-sm"
+            className="w-full mt-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
           />
         </div>
         <div>
-          <label className="text-sm text-slate-600">Deskripsi</label>
+          <label className="text-sm text-slate-600 dark:text-slate-300">Deskripsi</label>
           <textarea
             required
             rows={5}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Jelaskan detail masalahnya..."
-            className="w-full mt-1 px-3 py-2 border border-slate-300 rounded-md text-sm"
+            className="w-full mt-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
           />
         </div>
         <div>
-          <label className="text-sm text-slate-600">Priority</label>
+          <label className="text-sm text-slate-600 dark:text-slate-300">Priority</label>
           <select
             value={priority}
             onChange={(e) => setPriority(e.target.value)}
-            className="w-full mt-1 px-3 py-2 border border-slate-300 rounded-md text-sm"
+            className="w-full mt-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
           >
             <option value="LOW">Low</option>
             <option value="MEDIUM">Medium</option>
@@ -112,16 +109,16 @@ export function CreateTicketPage() {
         </div>
 
         {isStaff && (
-          <div className="border border-dashed border-slate-300 rounded-md p-3 space-y-3 bg-slate-50/50">
-            <p className="text-xs text-slate-500 font-medium">
+          <div className="border border-dashed border-slate-300 dark:border-slate-600 rounded-md p-3 space-y-3 bg-slate-50/50 dark:bg-slate-700/30">
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
               Opsi staff — buat ticket atas nama user lain / kerjaan yang udah selesai duluan
             </p>
             <div>
-              <label className="text-sm text-slate-600">Dikerjakan untuk (User)</label>
+              <label className="text-sm text-slate-600 dark:text-slate-300">Dikerjakan untuk (User)</label>
               <select
                 value={requestedForUserId}
                 onChange={(e) => setRequestedForUserId(e.target.value)}
-                className="w-full mt-1 px-3 py-2 border border-slate-300 rounded-md text-sm"
+                className="w-full mt-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
               >
                 <option value="">Diri sendiri ({currentUser?.name})</option>
                 {allUsers
@@ -134,11 +131,11 @@ export function CreateTicketPage() {
               </select>
             </div>
             <div>
-              <label className="text-sm text-slate-600">Assign ke</label>
+              <label className="text-sm text-slate-600 dark:text-slate-300">Assign ke</label>
               <select
                 value={assigneeId}
                 onChange={(e) => setAssigneeId(e.target.value)}
-                className="w-full mt-1 px-3 py-2 border border-slate-300 rounded-md text-sm"
+                className="w-full mt-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
               >
                 <option value="">Belum di-assign</option>
                 {agents.map((a) => (
@@ -152,11 +149,11 @@ export function CreateTicketPage() {
         )}
 
         <div>
-          <label className="text-sm text-slate-600">Kategori (opsional)</label>
+          <label className="text-sm text-slate-600 dark:text-slate-300">Kategori (opsional)</label>
           <select
             value={categoryId}
             onChange={(e) => setCategoryId(e.target.value)}
-            className="w-full mt-1 px-3 py-2 border border-slate-300 rounded-md text-sm"
+            className="w-full mt-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
           >
             <option value="">Tanpa kategori</option>
             {categories.map((c) => (
@@ -168,15 +165,15 @@ export function CreateTicketPage() {
         </div>
 
         <div>
-          <label className="text-sm text-slate-600">Lampiran (opsional)</label>
+          <label className="text-sm text-slate-600 dark:text-slate-300">Lampiran (opsional)</label>
           <input
             type="file"
             multiple
             onChange={handleFilesChange}
-            className="w-full mt-1 text-sm"
+            className="w-full mt-1 text-sm text-slate-600 dark:text-slate-300"
           />
           {files.length > 0 && (
-            <ul className="mt-1 text-xs text-slate-500 list-disc list-inside">
+            <ul className="mt-1 text-xs text-slate-500 dark:text-slate-400 list-disc list-inside">
               {files.map((f) => (
                 <li key={f.name}>{f.name}</li>
               ))}
@@ -184,7 +181,7 @@ export function CreateTicketPage() {
           )}
         </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
         <button
           type="submit"
