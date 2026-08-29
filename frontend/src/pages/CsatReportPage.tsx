@@ -1,111 +1,233 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { ticketsApi } from '../api/tickets';
+import { useEffect, useState, FormEvent } from 'react';
+import { Navigate } from 'react-router-dom';
+import { usersManagementApi, AppUser } from '../api/users';
+import { useAuth } from '../context/AuthContext';
 
-interface CsatStats {
-  total: number;
-  average: number;
-  distribution: { star: number; count: number }[];
-  recent: {
-    id: string;
-    title: string;
-    csatRating: number;
-    csatComment: string | null;
-    csatSubmittedAt: string;
-    requester: { name: string };
-  }[];
-}
+const roleBadgeColor: Record<string, string> = {
+  ADMIN: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
+  AGENT: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+  CUSTOMER: 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300',
+};
 
-export function CsatReportPage() {
-  const [stats, setStats] = useState<CsatStats | null>(null);
+export function UsersPage() {
+  const { user: currentUser } = useAuth();
+  const [users, setUsers] = useState<AppUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  useEffect(() => {
-    ticketsApi.csatStats().then((res: any) => {
-      setStats(res.data);
-      setLoading(false);
-    });
-  }, []);
+  const [showForm, setShowForm] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newEmail, setNewEmail] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [newRole, setNewRole] = useState('CUSTOMER');
+  const [creating, setCreating] = useState(false);
 
-  if (loading) return <p className="text-slate-500">Memuat...</p>;
-  if (!stats || stats.total === 0) {
-    return (
-      <div className="space-y-2">
-        <h1 className="text-xl font-semibold">Laporan Kepuasan (CSAT)</h1>
-        <p className="text-sm text-slate-400">Belum ada rating yang masuk.</p>
-      </div>
-    );
+  async function load() {
+    const { data } = await usersManagementApi.list();
+    setUsers(data);
+    setLoading(false);
   }
 
-  const maxCount = Math.max(...stats.distribution.map((d) => d.count), 1);
+  useEffect(() => {
+    load();
+  }, []);
+
+  if (currentUser?.role !== 'ADMIN') {
+    return <Navigate to="/" replace />;
+  }
+
+  async function handleCreate(e: FormEvent) {
+    e.preventDefault();
+    setError('');
+    setCreating(true);
+    try {
+      await usersManagementApi.create({
+        name: newName,
+        email: newEmail,
+        password: newPassword,
+        role: newRole,
+      });
+      setNewName('');
+      setNewEmail('');
+      setNewPassword('');
+      setNewRole('CUSTOMER');
+      setShowForm(false);
+      await load();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Gagal membuat user');
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  async function handleRoleChange(id: string, role: string) {
+    setError('');
+    try {
+      await usersManagementApi.updateRole(id, role as any);
+      await load();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Gagal mengubah role');
+    }
+  }
+
+  async function handleDelete(id: string, name: string) {
+    if (!window.confirm(`Hapus user "${name}"? Ticket yang di-assign ke dia akan dilepas.`)) return;
+    setError('');
+    try {
+      await usersManagementApi.remove(id);
+      await load();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Gagal menghapus user');
+    }
+  }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-semibold">Laporan Kepuasan (CSAT)</h1>
-        <p className="text-sm text-slate-500">Rating dari user setelah ticket selesai.</p>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold text-slate-800 dark:text-slate-100">Kelola User</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Atur role dan akses tiap user.</p>
+        </div>
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className="bg-blue-600 text-white text-sm px-4 py-2 rounded-md hover:bg-blue-700"
+        >
+          {showForm ? 'Batal' : '+ Tambah User'}
+        </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-white border border-slate-200 rounded-lg p-5">
-          <p className="text-xs text-slate-500">Rata-rata Rating</p>
-          <p className="text-3xl font-semibold text-slate-800 mt-1">
-            {stats.average} <span className="text-lg text-yellow-400">★</span>
-          </p>
-          <p className="text-xs text-slate-400 mt-1">dari {stats.total} rating</p>
-        </div>
-        <div className="bg-white border border-slate-200 rounded-lg p-5">
-          <p className="text-xs text-slate-500 mb-2">Distribusi Bintang</p>
-          <div className="space-y-1">
-            {stats.distribution
-              .slice()
-              .reverse()
-              .map((d) => (
-                <div key={d.star} className="flex items-center gap-2 text-xs">
-                  <span className="w-8 text-slate-500">{d.star}★</span>
-                  <div className="flex-1 bg-slate-100 rounded-full h-2">
-                    <div
-                      className="bg-yellow-400 h-2 rounded-full"
-                      style={{ width: `${(d.count / maxCount) * 100}%` }}
-                    />
-                  </div>
-                  <span className="w-6 text-right text-slate-500">{d.count}</span>
-                </div>
-              ))}
+      {showForm && (
+        <form
+          onSubmit={handleCreate}
+          className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4 space-y-3"
+        >
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs text-slate-500 dark:text-slate-400">Nama</label>
+              <input
+                required
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                className="w-full mt-1 px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-slate-500 dark:text-slate-400">Email</label>
+              <input
+                type="email"
+                required
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                className="w-full mt-1 px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-slate-500 dark:text-slate-400">Password (min. 6 karakter)</label>
+              <input
+                type="password"
+                required
+                minLength={6}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="w-full mt-1 px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-slate-500 dark:text-slate-400">Role</label>
+              <select
+                value={newRole}
+                onChange={(e) => setNewRole(e.target.value)}
+                className="w-full mt-1 px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+              >
+                <option value="CUSTOMER">CUSTOMER</option>
+                <option value="AGENT">AGENT</option>
+                <option value="ADMIN">ADMIN</option>
+              </select>
+            </div>
           </div>
-        </div>
-      </div>
+          <button
+            type="submit"
+            disabled={creating}
+            className="bg-blue-600 text-white text-sm px-4 py-1.5 rounded-md hover:bg-blue-700 disabled:opacity-50"
+          >
+            {creating ? 'Membuat...' : 'Buat User'}
+          </button>
+        </form>
+      )}
 
-      <div className="bg-white border border-slate-200 rounded-lg">
-        <div className="px-4 py-3 border-b border-slate-100">
-          <h2 className="text-sm font-semibold text-slate-700">Rating Terbaru</h2>
-        </div>
-        <div className="divide-y divide-slate-100">
-          {stats.recent.map((r) => (
-            <Link
-              key={r.id}
-              to={`/tickets/${r.id}`}
-              className="block px-4 py-3 hover:bg-slate-50"
-            >
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-slate-800">{r.title}</p>
-                <div className="flex gap-0.5 text-sm shrink-0">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <span key={star} className={star <= r.csatRating ? 'text-yellow-400' : 'text-slate-200'}>
-                      ★
+      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+
+      <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
+        <table className="w-full text-sm">
+          <thead className="bg-slate-50 dark:bg-slate-700/50 text-left text-xs text-slate-500 dark:text-slate-400 uppercase">
+            <tr>
+              <th className="px-4 py-2.5">Nama</th>
+              <th className="px-4 py-2.5">Email</th>
+              <th className="px-4 py-2.5">Role</th>
+              <th className="px-4 py-2.5">Ticket Dibuat</th>
+              <th className="px-4 py-2.5">Ticket Ditangani</th>
+              <th className="px-4 py-2.5"></th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+            {loading && (
+              <tr>
+                <td colSpan={6} className="px-4 py-6 text-center text-slate-400 dark:text-slate-500">
+                  Memuat...
+                </td>
+              </tr>
+            )}
+            {!loading && users.length === 0 && (
+              <tr>
+                <td colSpan={6} className="px-4 py-6 text-center text-slate-400 dark:text-slate-500">
+                  Tidak ada user.
+                </td>
+              </tr>
+            )}
+            {users.map((u) => (
+              <tr key={u.id}>
+                <td className="px-4 py-2.5 font-medium text-slate-800 dark:text-slate-100">
+                  {u.name}
+                  {u.id === currentUser?.id && (
+                    <span className="ml-1.5 text-xs text-slate-400 dark:text-slate-500">(kamu)</span>
+                  )}
+                </td>
+                <td className="px-4 py-2.5 text-slate-500 dark:text-slate-400">{u.email}</td>
+                <td className="px-4 py-2.5">
+                  {u.id === currentUser?.id ? (
+                    <span
+                      className={`text-xs px-2 py-0.5 rounded-full font-medium ${roleBadgeColor[u.role]}`}
+                    >
+                      {u.role}
                     </span>
-                  ))}
-                </div>
-              </div>
-              <p className="text-xs text-slate-500 mt-0.5">
-                {r.requester.name} · {new Date(r.csatSubmittedAt).toLocaleDateString('id-ID')}
-              </p>
-              {r.csatComment && (
-                <p className="text-xs text-slate-600 mt-1 italic">"{r.csatComment}"</p>
-              )}
-            </Link>
-          ))}
-        </div>
+                  ) : (
+                    <select
+                      value={u.role}
+                      onChange={(e) => handleRoleChange(u.id, e.target.value)}
+                      className="text-xs border border-slate-300 dark:border-slate-600 rounded-md px-2 py-1 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                    >
+                      <option value="CUSTOMER">CUSTOMER</option>
+                      <option value="AGENT">AGENT</option>
+                      <option value="ADMIN">ADMIN</option>
+                    </select>
+                  )}
+                </td>
+                <td className="px-4 py-2.5 text-slate-500 dark:text-slate-400">{u._count?.ticketsCreated ?? 0}</td>
+                <td className="px-4 py-2.5 text-slate-500 dark:text-slate-400">{u._count?.ticketsAssigned ?? 0}</td>
+                <td className="px-4 py-2.5 text-right">
+                  {u.id !== currentUser?.id && (
+                    <button
+                      onClick={() => handleDelete(u.id, u.name)}
+                      className="text-xs text-red-600 dark:text-red-400 hover:underline"
+                    >
+                      Hapus
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
