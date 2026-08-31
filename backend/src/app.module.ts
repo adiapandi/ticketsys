@@ -12,6 +12,7 @@ import { AttachmentsModule } from './attachments/attachments.module';
 import { SlaModule } from './sla/sla.module';
 import { CategoriesModule } from './categories/categories.module';
 import { AuditLogModule } from './audit-log/audit-log.module';
+import { CannedResponsesModule } from './canned-responses/canned-responses.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { AuditLogModule } from './audit-log/audit-log.module';
     CommentsModule,
     AttachmentsModule,
     CategoriesModule,
+    CannedResponsesModule,
   ],
 })
 export class AppModule {}
