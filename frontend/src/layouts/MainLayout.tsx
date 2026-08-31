@@ -32,9 +32,14 @@ export function MainLayout() {
                 + Ticket Baru
               </Link>
               {(user.role === 'ADMIN' || user.role === 'AGENT') && (
-                <Link to="/admin/csat" className="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
-                  CSAT
-                </Link>
+              <>
+                  <Link to="/admin/canned-responses" className="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
+                    Template
+                  </Link>
+                  <Link to="/admin/csat" className="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
+                    CSAT
+                  </Link>
+                </>
               )}
               {user.role === 'ADMIN' && (
                 <>
