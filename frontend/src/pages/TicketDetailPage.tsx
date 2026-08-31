@@ -5,6 +5,7 @@ import { StatusBadge, PriorityBadge, SlaBadge } from '../components/Badges';
 import { AttachmentSection } from '../components/AttachmentSection';
 import { AuditLogList } from '../components/AuditLogList';
 import { CsatRating } from '../components/CsatRating';
+import { cannedResponsesApi, CannedResponse } from '../api/cannedResponses';
 import { useAuth } from '../context/AuthContext';
 
 const STATUS_OPTIONS = ['OPEN', 'IN_PROGRESS', 'PENDING', 'RESOLVED', 'CLOSED'];
@@ -21,6 +22,7 @@ export function TicketDetailPage() {
   const [newComment, setNewComment] = useState('');
   const [isInternal, setIsInternal] = useState(false);
   const [posting, setPosting] = useState(false);
+  const [cannedResponses, setCannedResponses] = useState<CannedResponse[]>([]);
 
   async function load() {
     if (!id) return;
@@ -33,6 +35,7 @@ export function TicketDetailPage() {
     load();
     if (isStaff) {
       usersApi.agents().then((res) => setAgents(res.data));
+      cannedResponsesApi.list().then((res) => setCannedResponses(res.data));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
@@ -48,6 +51,13 @@ export function TicketDetailPage() {
       await load();
     } finally {
       setPosting(false);
+    }
+  }
+
+    function handleTemplateSelect(templateId: string) {
+    const template = cannedResponses.find((c) => c.id === templateId);
+    if (template) {
+      setNewComment((prev) => (prev ? `${prev}\n\n${template.body}` : template.body));
     }
   }
 
@@ -110,6 +120,25 @@ export function TicketDetailPage() {
           </div>
 
           <form onSubmit={handleCommentSubmit} className="p-5 border-t border-slate-100 dark:border-slate-700 space-y-2">
+            {isStaff && cannedResponses.length > 0 && (
+              <select
+                onChange={(e) => {
+                  handleTemplateSelect(e.target.value);
+                  e.target.value = '';
+                }}
+                defaultValue=""
+                className="text-xs px-2 py-1 border border-slate-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300"
+              >
+                <option value="" disabled>
+                  📋 Pakai Template...
+                </option>
+                {cannedResponses.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.title}
+                  </option>
+                ))}
+              </select>
+            )}
             <textarea
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
