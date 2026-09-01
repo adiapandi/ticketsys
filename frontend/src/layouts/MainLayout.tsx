@@ -4,6 +4,7 @@ import { NotificationBell } from '../components/NotificationBell';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { Avatar } from '../components/Avatar';
 import { Logo } from '../components/Logo';
+import { SettingsMenu } from '../components/SettingsMenu';
 
 const roleBadgeColor: Record<string, string> = {
   ADMIN: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
@@ -33,25 +34,11 @@ export function MainLayout() {
                 + Ticket Baru
               </Link>
               {(user.role === 'ADMIN' || user.role === 'AGENT') && (
-              <>
-                  <Link to="/admin/canned-responses" className="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
-                    Template
-                  </Link>
-                  <Link to="/admin/csat" className="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
-                    CSAT
-                  </Link>
-                </>
+              <Link to="/admin/csat" className="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
+                  CSAT
+              </Link>
               )}
-              {user.role === 'ADMIN' && (
-                <>
-                  <Link to="/admin/categories" className="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
-                    Kategori
-                  </Link>
-                  <Link to="/admin/users" className="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
-                    User
-                  </Link>
-                </>
-              )}
+              <SettingsMenu />
               <ThemeToggle />
               <NotificationBell />
               <Link to="/profile" className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400">
