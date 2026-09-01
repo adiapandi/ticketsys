@@ -2,6 +2,7 @@ import { useState, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { Logo } from '../components/Logo';
 
 export function LoginPage() {
   const { login, isLoading } = useAuth();
@@ -27,8 +28,13 @@ export function LoginPage() {
         <ThemeToggle />
       </div>
       <div className="bg-white dark:bg-slate-800 p-8 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 w-full max-w-sm">
-        <h1 className="text-xl font-semibold mb-1 text-slate-800 dark:text-slate-100">Masuk</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">Ticketing System — In-house Helpdesk</p>
+        <div className="flex justify-center mb-4">
+          <Logo size={48} showText={false} />
+        </div>
+        <h1 className="text-xl font-semibold mb-1 text-slate-800 dark:text-slate-100 text-center">
+          <span className="text-blue-600 dark:text-blue-400">i</span>Tix
+        </h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 text-center">In-house IT Helpdesk</p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
