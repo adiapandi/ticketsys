@@ -28,13 +28,10 @@ export function LoginPage() {
         <ThemeToggle />
       </div>
       <div className="bg-white dark:bg-slate-800 p-8 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 w-full max-w-sm">
-        <div className="flex justify-center mb-4">
-          <Logo size={48} showText={false} />
+        <div className="flex justify-center mb-2">
+          <Logo size={40} />
         </div>
-        <h1 className="text-xl font-semibold mb-1 text-slate-800 dark:text-slate-100 text-center">
-          <span className="text-blue-600 dark:text-blue-400">i</span>Tix
-        </h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 text-center">In-house IT Helpdesk</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 text-center">IT Ticketing System</p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
