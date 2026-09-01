@@ -54,12 +54,12 @@ export function LoginIllustration() {
         </g>
       </svg>
 
-      {/* Ilustrasi orang - gambar hasil download, ditumpuk di posisi bawah-tengah */}
+            {/* Ilustrasi orang - gambar hasil download, ditumpuk di posisi bawah-tengah */}
       <img
         src="/login-illustration.svg"
         alt="Illustration"
         className="absolute"
-        style={{ left: '10%', top: '52%', width: '55%', height: 'auto' }}
+        style={{ left: '30%', top: '56%', width: '42%', height: 'auto' }}
       />
     </div>
   );
