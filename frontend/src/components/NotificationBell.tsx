@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Bell } from 'lucide-react';
 import { notificationsApi, AppNotification } from '../api/tickets';
 
 function timeAgo(dateStr: string) {
