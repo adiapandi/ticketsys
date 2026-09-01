@@ -5,6 +5,7 @@ import { ThemeToggle } from '../components/ThemeToggle';
 import { Logo } from '../components/Logo';
 import { LiveClock } from '../components/LiveClock';
 import { VersionWatermark } from '../components/VersionWatermark';
+import { LoginBackground } from '../components/LoginBackground';
 
 export function LoginPage() {
   const { login, isLoading } = useAuth();
@@ -25,8 +26,9 @@ export function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 relative transition-colors">
-      <div className="absolute top-4 right-4 flex items-center gap-3">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 relative transition-colors overflow-hidden">
+        <LoginBackground />
+        <div className="absolute top-4 right-4 flex items-center gap-3">
         <LiveClock />
         <ThemeToggle />
       </div>
