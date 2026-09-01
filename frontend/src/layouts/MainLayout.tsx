@@ -39,7 +39,6 @@ export function MainLayout() {
                 <Plus size={16} strokeWidth={1.75} />
                 Ticket Baru
               </Link>
-              {(user.role === 'ADMIN' || user.role === 'AGENT') && (
               <ReportsMenu />
               <SettingsMenu />
               <ThemeToggle />
