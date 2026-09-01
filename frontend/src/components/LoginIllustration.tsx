@@ -76,14 +76,18 @@ export function LoginIllustration() {
         {/* Kepala */}
         <circle cx="80" cy="10" r="26" fill="#FBCFB0" />
 
-        {/* Rambut */}
+        {/* Rambut - menutup atas & samping kepala secara natural, tidak turun ke bawah */}
         <path
-          d="M54 8 Q54 -16 80 -16 Q106 -16 106 8 Q106 -2 80 -4 Q54 -2 54 8Z"
+          d="M53 12
+             Q50 -18 80 -18
+             Q110 -18 107 12
+             Q107 -2 96 -6
+             Q88 -10 80 -9
+             Q72 -10 64 -6
+             Q53 -2 53 12 Z"
           fill="#1E293B"
           className="dark:fill-slate-900"
         />
-        <path d="M54 8 Q52 20 58 26" stroke="#1E293B" strokeWidth="8" strokeLinecap="round" fill="none" className="dark:stroke-slate-900" />
-        <path d="M106 8 Q108 20 102 26" stroke="#1E293B" strokeWidth="8" strokeLinecap="round" fill="none" className="dark:stroke-slate-900" />
 
         {/* Tangan (di ujung lengan, dekat laptop) */}
         <circle cx="38" cy="120" r="9" fill="#FBCFB0" />
