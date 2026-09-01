@@ -70,10 +70,10 @@ export function NotificationBell() {
     <div className="relative" ref={containerRef}>
       <button
         onClick={handleToggle}
-        className="relative text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 text-lg"
+        className="relative text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
         aria-label="Notifikasi"
       >
-        🔔
+        <Bell size={18} strokeWidth={1.75} />
         {unreadCount > 0 && (
           <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
             {unreadCount > 9 ? '9+' : unreadCount}
