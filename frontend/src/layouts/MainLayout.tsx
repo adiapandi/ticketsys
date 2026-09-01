@@ -5,6 +5,8 @@ import { ThemeToggle } from '../components/ThemeToggle';
 import { Avatar } from '../components/Avatar';
 import { Logo } from '../components/Logo';
 import { SettingsMenu } from '../components/SettingsMenu';
+import { ReportsMenu } from '../components/ReportsMenu';
+import { Plus } from 'lucide-react';
 
 const roleBadgeColor: Record<string, string> = {
   ADMIN: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
@@ -30,14 +32,15 @@ export function MainLayout() {
         <div className="flex items-center gap-4">
           {user && (
             <>
-              <Link to="/tickets/new" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
-                + Ticket Baru
+              <Link
+                to="/tickets/new"
+                className="flex items-center gap-1.5 text-sm text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                <Plus size={16} strokeWidth={1.75} />
+                Ticket Baru
               </Link>
               {(user.role === 'ADMIN' || user.role === 'AGENT') && (
-              <Link to="/admin/csat" className="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">
-                  CSAT
-              </Link>
-              )}
+              <ReportsMenu />
               <SettingsMenu />
               <ThemeToggle />
               <NotificationBell />
