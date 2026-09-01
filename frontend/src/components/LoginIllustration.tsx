@@ -9,19 +9,15 @@ export function LoginIllustration() {
 
       {/* Card / browser mockup */}
       <rect x="140" y="40" width="260" height="200" rx="12" className="fill-white dark:fill-slate-700" stroke="#2563EB" strokeOpacity="0.15" />
-      {/* Top bar dots */}
       <circle cx="160" cy="58" r="4" fill="#2563EB" fillOpacity="0.3" />
       <circle cx="174" cy="58" r="4" fill="#2563EB" fillOpacity="0.3" />
       <circle cx="188" cy="58" r="4" fill="#2563EB" fillOpacity="0.3" />
-      {/* Address bar */}
       <rect x="160" y="70" width="220" height="14" rx="7" fill="#2563EB" fillOpacity="0.08" />
 
-      {/* Sidebar boxes */}
       <rect x="160" y="98" width="60" height="60" rx="6" fill="#2563EB" />
       <rect x="160" y="164" width="28" height="28" rx="4" fill="#2563EB" fillOpacity="0.2" />
       <rect x="192" y="164" width="28" height="28" rx="4" fill="#2563EB" fillOpacity="0.2" />
 
-      {/* Content lines (ticket list style) */}
       <circle cx="255" cy="108" r="14" fill="#2563EB" fillOpacity="0.15" />
       <path d="M249 108l4 4 8-8" stroke="#2563EB" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
       <rect x="278" y="102" width="90" height="8" rx="4" fill="#94A3B8" fillOpacity="0.4" />
@@ -33,32 +29,74 @@ export function LoginIllustration() {
       <rect x="230" y="160" width="8" height="8" rx="2" fill="#F59E0B" />
       <rect x="245" y="160" width="70" height="8" rx="4" fill="#94A3B8" fillOpacity="0.4" />
 
-      {/* Button */}
       <rect x="160" y="204" width="220" height="24" rx="12" fill="#2563EB" />
       <rect x="220" y="212" width="100" height="8" rx="4" fill="white" fillOpacity="0.8" />
 
-      {/* Simple seated person */}
-      <g transform="translate(80 250)">
-        {/* Plant pot */}
-        <rect x="-20" y="90" width="36" height="30" rx="4" fill="#1E3A8A" />
-        <path d="M-14 90 Q-14 60 -20 40 M-2 90 Q-2 55 4 30 M10 90 Q10 60 18 45" stroke="#22C55E" strokeWidth="6" strokeLinecap="round" fill="none" />
-
-        {/* Legs */}
-        <path d="M60 130 Q90 150 130 140 Q160 132 175 110" stroke="#1E293B" strokeWidth="16" strokeLinecap="round" fill="none" className="dark:stroke-slate-500" />
-        {/* Body */}
-        <path d="M55 60 Q50 100 60 135" stroke="#2563EB" strokeWidth="30" strokeLinecap="round" fill="none" />
-        {/* Head */}
-        <circle cx="58" cy="35" r="22" fill="#FBCFB0" />
-        {/* Hair */}
-        <path d="M36 32 Q34 10 58 8 Q84 8 82 32 Q82 20 58 18 Q40 18 36 32Z" fill="#1E293B" className="dark:fill-slate-900" />
-        {/* Laptop */}
-        <rect x="95" y="95" width="70" height="46" rx="4" fill="#1E293B" className="dark:fill-slate-600" />
-        <rect x="99" y="99" width="62" height="34" rx="2" fill="#2563EB" fillOpacity="0.2" />
-        <rect x="90" y="141" width="80" height="6" rx="3" fill="#1E293B" className="dark:fill-slate-600" />
+      {/* Tanaman */}
+      <g transform="translate(60 250)">
+        <rect x="8" y="110" width="46" height="36" rx="7" fill="#1E3A8A" />
+        <rect x="8" y="108" width="46" height="8" rx="4" fill="#1E40AF" />
+        <path d="M31 108 Q31 70 20 45" stroke="#22C55E" strokeWidth="7" strokeLinecap="round" fill="none" />
+        <path d="M31 108 Q31 65 31 35" stroke="#16A34A" strokeWidth="7" strokeLinecap="round" fill="none" />
+        <path d="M31 108 Q31 72 45 50" stroke="#22C55E" strokeWidth="7" strokeLinecap="round" fill="none" />
       </g>
 
-      {/* Floating ticket icon */}
-      <g transform="translate(370 260)">
+      {/* Orang duduk bersila dengan laptop */}
+      <g transform="translate(120 235)">
+        {/* Kaki bersila */}
+        <path
+          d="M10 130 Q8 158 40 163 L150 163 Q182 158 180 130 L177 112 Q174 104 158 104 L32 104 Q16 104 13 112 Z"
+          fill="#1E293B"
+          className="dark:fill-slate-600"
+        />
+
+        {/* Lengan kiri (dari sudut pandang kita) */}
+        <path
+          d="M42 58 Q28 85 40 118"
+          stroke="#2563EB"
+          strokeWidth="15"
+          strokeLinecap="round"
+          fill="none"
+        />
+        {/* Lengan kanan */}
+        <path
+          d="M118 58 Q134 85 122 118"
+          stroke="#2563EB"
+          strokeWidth="15"
+          strokeLinecap="round"
+          fill="none"
+        />
+
+        {/* Badan */}
+        <rect x="38" y="45" width="84" height="80" rx="32" fill="#2563EB" />
+
+        {/* Leher */}
+        <rect x="70" y="20" width="20" height="18" rx="8" fill="#FBCFB0" />
+
+        {/* Kepala */}
+        <circle cx="80" cy="10" r="26" fill="#FBCFB0" />
+
+        {/* Rambut */}
+        <path
+          d="M54 8 Q54 -16 80 -16 Q106 -16 106 8 Q106 -2 80 -4 Q54 -2 54 8Z"
+          fill="#1E293B"
+          className="dark:fill-slate-900"
+        />
+        <path d="M54 8 Q52 20 58 26" stroke="#1E293B" strokeWidth="8" strokeLinecap="round" fill="none" className="dark:stroke-slate-900" />
+        <path d="M106 8 Q108 20 102 26" stroke="#1E293B" strokeWidth="8" strokeLinecap="round" fill="none" className="dark:stroke-slate-900" />
+
+        {/* Tangan (di ujung lengan, dekat laptop) */}
+        <circle cx="38" cy="120" r="9" fill="#FBCFB0" />
+        <circle cx="124" cy="120" r="9" fill="#FBCFB0" />
+
+        {/* Laptop */}
+        <rect x="30" y="98" width="102" height="14" rx="3" fill="#1E293B" className="dark:fill-slate-600" />
+        <rect x="34" y="52" width="94" height="52" rx="5" fill="#1E293B" className="dark:fill-slate-600" />
+        <rect x="40" y="58" width="82" height="40" rx="2" fill="#2563EB" fillOpacity="0.25" />
+      </g>
+
+      {/* Kartu ticket melayang */}
+      <g transform="translate(355 265)">
         <rect x="0" y="0" width="70" height="44" rx="8" fill="white" className="dark:fill-slate-700" stroke="#2563EB" strokeOpacity="0.2" />
         <circle cx="0" cy="22" r="6" fill="#F8FAFC" className="dark:fill-slate-900" />
         <circle cx="70" cy="22" r="6" fill="#F8FAFC" className="dark:fill-slate-900" />
