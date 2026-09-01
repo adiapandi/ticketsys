@@ -4,6 +4,8 @@ Helpdesk ticketing system yang dibangun dari nol — awalnya project belajar, se
 
 ![CI](https://github.com/adiapandi/ticketsys/actions/workflows/ci.yml/badge.svg)
 
+> Ganti `<username>/<nama-repo>` di URL badge atas dengan username & nama repo GitHub kamu sendiri.
+
 ## Tech Stack
 
 - **Backend**: NestJS (TypeScript), Prisma ORM, PostgreSQL, JWT Auth, Nodemailer, node-cron (via `@nestjs/schedule`)
@@ -68,6 +70,7 @@ ticketing-system/
 │ ├── api/
 │ └── utils/
 └── docker-compose.yml # PostgreSQL untuk development
+
 
 ## Cara Menjalankan (Development)
 
