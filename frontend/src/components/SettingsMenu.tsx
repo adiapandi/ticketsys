@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Settings } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export function SettingsMenu() {
@@ -23,9 +24,10 @@ export function SettingsMenu() {
     <div className="relative" ref={containerRef}>
       <button
         onClick={() => setOpen(!open)}
-        className="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+        className="flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
       >
-        ⚙️ Setting
+        <Settings size={16} strokeWidth={1.75} />
+        Setting
       </button>
 
       {open && (
