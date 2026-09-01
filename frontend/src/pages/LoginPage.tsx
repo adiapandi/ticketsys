@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { Logo } from '../components/Logo';
+import { LiveClock } from '../components/LiveClock';
+import { VersionWatermark } from '../components/VersionWatermark';
 
 export function LoginPage() {
   const { login, isLoading } = useAuth();
@@ -24,7 +26,8 @@ export function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 relative transition-colors">
-      <div className="absolute top-4 right-4">
+      <div className="absolute top-4 right-4 flex items-center gap-3">
+        <LiveClock />
         <ThemeToggle />
       </div>
       <div className="bg-white dark:bg-slate-800 p-8 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 w-full max-w-sm">
@@ -67,6 +70,9 @@ export function LoginPage() {
             {isLoading ? 'Memproses...' : 'Masuk'}
           </button>
         </form>
+      </div>
+      <div className="absolute bottom-4">
+        <VersionWatermark />
       </div>
     </div>
   );
