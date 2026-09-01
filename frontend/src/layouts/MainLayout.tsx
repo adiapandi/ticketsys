@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { NotificationBell } from '../components/NotificationBell';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { Avatar } from '../components/Avatar';
+import { Logo } from '../components/Logo';
 
 const roleBadgeColor: Record<string, string> = {
   ADMIN: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
@@ -22,8 +23,8 @@ export function MainLayout() {
   return (
     <div className="min-h-screen flex flex-col">
       <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 py-3 flex items-center justify-between transition-colors">
-        <Link to="/" className="text-lg font-semibold text-slate-800 dark:text-slate-100">
-          🎫 Ticketing System
+        <Link to="/">
+          <Logo size={30} />
         </Link>
         <div className="flex items-center gap-4">
           {user && (
