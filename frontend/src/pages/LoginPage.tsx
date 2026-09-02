@@ -42,11 +42,8 @@ export function LoginPage() {
 
         <div className="flex-1 flex items-center justify-center">
           <div className="w-full max-w-sm">
-            <h1 className="text-2xl font-semibold mb-1 text-slate-800 dark:text-slate-100">Masuk</h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mb-8">
-              Masuk ke akun kamu untuk mengelola tiket IT support.
-            </p>
-
+            <h1 className="text-2xl font-bold mb-1 text-slate-800 dark:text-slate-100">Masuk</h1>
+            
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="text-sm text-slate-600 dark:text-slate-300">Email</label>
