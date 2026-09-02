@@ -42,7 +42,7 @@ export function LoginPage() {
 
         <div className="flex-1 flex items-center justify-center">
           <div className="w-full max-w-sm">
-            <h1 className="text-2xl font-bold mb-1 text-slate-800 dark:text-slate-100">Masuk</h1>
+            <h1 className="text-2xl font-bold mb-2 text-slate-800 dark:text-slate-100">Log in</h1>
             
             
             <form onSubmit={handleSubmit} className="space-y-4">
