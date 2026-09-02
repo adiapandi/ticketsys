@@ -44,6 +44,7 @@ export function LoginPage() {
           <div className="w-full max-w-sm">
             <h1 className="text-2xl font-bold mb-1 text-slate-800 dark:text-slate-100">Masuk</h1>
             
+            
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="text-sm text-slate-600 dark:text-slate-300">Email</label>
