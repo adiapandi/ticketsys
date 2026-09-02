@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, ReactNode } from 'react';
 import { api } from '../api/client';
+import { saveAuth, getStoredUser, clearAuth, updateStoredUser } from '../utils/authStorage';
 
 interface User {
   id: string;
@@ -12,7 +13,7 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, remember?: boolean) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => void;
   updateUser: (data: Partial<User>) => void;
@@ -22,18 +23,14 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(() => {
-    const stored = localStorage.getItem('user');
-    return stored ? JSON.parse(stored) : null;
-  });
+  const [user, setUser] = useState<User | null>(() => getStoredUser<User>());
   const [isLoading, setIsLoading] = useState(false);
 
-  async function login(email: string, password: string) {
+  async function login(email: string, password: string, remember: boolean = true) {
     setIsLoading(true);
     try {
       const { data } = await api.post('/auth/login', { email, password });
-      localStorage.setItem('accessToken', data.accessToken);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      saveAuth(data.accessToken, data.user, remember);
       setUser(data.user);
     } finally {
       setIsLoading(false);
@@ -44,8 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     try {
       const { data } = await api.post('/auth/register', { email, password, name });
-      localStorage.setItem('accessToken', data.accessToken);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      saveAuth(data.accessToken, data.user, true);
       setUser(data.user);
     } finally {
       setIsLoading(false);
@@ -53,8 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   function logout() {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('user');
+    clearAuth();
     setUser(null);
   }
 
@@ -62,7 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser((prev) => {
       if (!prev) return prev;
       const updated = { ...prev, ...data };
-      localStorage.setItem('user', JSON.stringify(updated));
+      updateStoredUser(data);
       return updated;
     });
   }
