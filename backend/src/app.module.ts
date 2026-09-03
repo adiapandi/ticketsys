@@ -13,6 +13,7 @@ import { SlaModule } from './sla/sla.module';
 import { CategoriesModule } from './categories/categories.module';
 import { AuditLogModule } from './audit-log/audit-log.module';
 import { CannedResponsesModule } from './canned-responses/canned-responses.module';
+import { DepartmentsModule } from './departments/departments.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { CannedResponsesModule } from './canned-responses/canned-responses.modul
     AttachmentsModule,
     CategoriesModule,
     CannedResponsesModule,
+    DepartmentsModule,
   ],
 })
 export class AppModule {}
