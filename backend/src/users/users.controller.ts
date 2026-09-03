@@ -6,6 +6,7 @@ import {
   Patch,
   Delete,
   Body,
+  Query,
   UseGuards,
   UseInterceptors,
   UploadedFile,
@@ -25,49 +26,50 @@ export class UsersController {
   constructor(private usersService: UsersService) {}
 
   @Post()
-  @Roles('ADMIN')
+  @Roles('SUPER_ADMIN', 'ADMIN')
   create(@Body() dto: CreateUserDto, @CurrentUser() user: any) {
-    return this.usersService.create(dto, user.userId);
+    return this.usersService.create(dto, user);
   }
 
   @Post('bulk-import')
-  @Roles('ADMIN')
+  @Roles('SUPER_ADMIN', 'ADMIN')
   @UseInterceptors(FileInterceptor('file', bulkImportMulterConfig))
   bulkImport(@UploadedFile() file: Express.Multer.File, @CurrentUser() user: any) {
-    return this.usersService.bulkImport(file.buffer, user.userId);
+    return this.usersService.bulkImport(file.buffer, user);
   }
 
   @Get()
-  @Roles('ADMIN', 'AGENT')
-  findAll() {
-    return this.usersService.findAll();
+  @Roles('SUPER_ADMIN', 'ADMIN', 'AGENT')
+  findAll(@CurrentUser() user: any) {
+    return this.usersService.findAll(user);
   }
 
   @Get('agents')
-  @Roles('ADMIN', 'AGENT')
-  findAgents() {
-    return this.usersService.findAgentsAndAdmins();
+  @Roles('SUPER_ADMIN', 'ADMIN', 'AGENT')
+  findAgents(@Query('departmentId') departmentId?: string) {
+    return this.usersService.findAgentsAndAdmins(departmentId);
   }
 
   @Get(':id')
-  @Roles('ADMIN')
+  @Roles('SUPER_ADMIN', 'ADMIN')
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(id);
   }
 
   @Patch(':id/role')
-  @Roles('ADMIN')
+  @Roles('SUPER_ADMIN', 'ADMIN')
   updateRole(
     @Param('id') id: string,
-    @Body('role') role: 'ADMIN' | 'AGENT' | 'CUSTOMER',
+    @Body('role') role: 'SUPER_ADMIN' | 'ADMIN' | 'AGENT' | 'CUSTOMER',
+    @Body('departmentId') departmentId: string | undefined,
     @CurrentUser() user: any,
   ) {
-    return this.usersService.updateRole(id, role, user.userId);
+    return this.usersService.updateRole(id, role, departmentId, user);
   }
 
   @Delete(':id')
-  @Roles('ADMIN')
+  @Roles('SUPER_ADMIN', 'ADMIN')
   remove(@Param('id') id: string, @CurrentUser() user: any) {
-    return this.usersService.remove(id, user.userId);
+    return this.usersService.remove(id, user);
   }
 }
