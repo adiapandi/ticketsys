@@ -8,6 +8,7 @@ datasource db {
 }
 
 enum Role {
+  SUPER_ADMIN
   ADMIN
   AGENT
   CUSTOMER
@@ -36,6 +37,8 @@ model User {
   phone     String?
   avatarUrl String?
   role      Role     @default(CUSTOMER)
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -49,10 +52,13 @@ model User {
 }
 
 model Category {
-  id      String   @id @default(uuid())
-  name    String   @unique
-  tickets Ticket[]
+  id           String      @id @default(uuid())
+  name         String
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+  tickets      Ticket[]
 
+  @@unique([name, departmentId])
   @@map("categories")
 }
 
@@ -84,6 +90,9 @@ model Ticket {
 
   categoryId String?
   category   Category? @relation(fields: [categoryId], references: [id])
+
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
 
   comments    Comment[]
   attachments Attachment[]
@@ -175,4 +184,16 @@ model AuditLog {
   ticketId String?
 
   @@map("audit_logs")
+}
+
+model Department {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+
+  users      User[]
+  categories Category[]
+  tickets    Ticket[]
+
+  @@map("departments")
 }
