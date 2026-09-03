@@ -3,17 +3,18 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { UpdateTicketDto } from './dto/update-ticket.dto';
 import { QueryTicketDto } from './dto/query-ticket.dto';
+import { SubmitCsatDto } from './dto/submit-csat.dto';
 import { TicketStatus } from '@prisma/client';
 import { MailService } from '../mail/mail.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { SlaService } from '../sla/sla.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
-import { SubmitCsatDto } from './dto/submit-csat.dto';
 
 interface AuthUser {
   userId: string;
   email: string;
-  role: 'ADMIN' | 'AGENT' | 'CUSTOMER';
+  role: 'SUPER_ADMIN' | 'ADMIN' | 'AGENT' | 'CUSTOMER';
+  departmentId?: string | null;
 }
 
 @Injectable()
@@ -26,11 +27,18 @@ export class TicketsService {
     private auditLogService: AuditLogService,
   ) {}
 
+  private isDeptScopedStaff(role: string): role is 'ADMIN' | 'AGENT' {
+    return role === 'ADMIN' || role === 'AGENT';
+  }
+
   async create(dto: CreateTicketDto, user: AuthUser) {
+    const department = await this.prisma.department.findUnique({ where: { id: dto.departmentId } });
+    if (!department) throw new BadRequestException('Department tidak ditemukan');
+
     const priority = dto.priority || 'MEDIUM';
     const { firstResponseDueAt, resolutionDueAt } = this.slaService.computeDueDates(priority);
 
-    const isStaff = user.role === 'ADMIN' || user.role === 'AGENT';
+    const isStaff = user.role === 'SUPER_ADMIN' || this.isDeptScopedStaff(user.role);
     const requesterId = isStaff && dto.requestedForUserId ? dto.requestedForUserId : user.userId;
     const assigneeId = isStaff && dto.assigneeId ? dto.assigneeId : undefined;
 
@@ -40,23 +48,29 @@ export class TicketsService {
         description: dto.description,
         priority,
         categoryId: dto.categoryId,
+        departmentId: dto.departmentId,
         requesterId,
         assigneeId,
         firstResponseDueAt,
         resolutionDueAt,
       },
-      include: { requester: true, category: true },
+      include: { requester: true, category: true, department: true },
     });
 
     await this.auditLogService.log(
       'TICKET_CREATED',
-      `Ticket dibuat: "${ticket.title}"`,
+      `Ticket dibuat: "${ticket.title}" (${department.name})`,
       user.userId,
       ticket.id,
     );
 
+    // Notif ke staff department terkait saja (bukan semua staff global)
     const staff = await this.prisma.user.findMany({
-      where: { role: { in: ['AGENT', 'ADMIN'] }, id: { not: assigneeId } },
+      where: {
+        role: { in: ['AGENT', 'ADMIN'] },
+        departmentId: dto.departmentId,
+        id: { not: assigneeId },
+      },
       select: { id: true, email: true },
     });
     await Promise.all(
@@ -102,6 +116,11 @@ export class TicketsService {
 
     if (user.role === 'CUSTOMER') {
       where.requesterId = user.userId;
+    } else if (user.role === 'SUPER_ADMIN') {
+      if (query.departmentId) where.departmentId = query.departmentId;
+    } else {
+      // ADMIN/AGENT department-scoped: paksa filter ke department sendiri, abaikan query dari luar
+      where.departmentId = user.departmentId;
     }
 
     if (query.status) where.status = query.status;
@@ -129,6 +148,7 @@ export class TicketsService {
           requester: { select: { id: true, name: true, email: true } },
           assignee: { select: { id: true, name: true, email: true } },
           category: true,
+          department: { select: { id: true, name: true } },
           _count: { select: { comments: true } },
         },
         orderBy: { [sortBy]: order },
@@ -147,6 +167,19 @@ export class TicketsService {
     };
   }
 
+  private assertDeptAccess(ticket: { departmentId: string | null; requesterId: string }, user: AuthUser) {
+    if (user.role === 'CUSTOMER') {
+      if (ticket.requesterId !== user.userId) {
+        throw new ForbiddenException('Kamu tidak punya akses ke ticket ini');
+      }
+      return;
+    }
+    if (user.role === 'SUPER_ADMIN') return;
+    if (ticket.departmentId !== user.departmentId) {
+      throw new ForbiddenException('Ticket ini bukan dari department kamu');
+    }
+  }
+
   async findOne(id: string, user: AuthUser) {
     const ticket = await this.prisma.ticket.findUnique({
       where: { id },
@@ -154,6 +187,7 @@ export class TicketsService {
         requester: { select: { id: true, name: true, email: true } },
         assignee: { select: { id: true, name: true, email: true } },
         category: true,
+        department: { select: { id: true, name: true } },
         comments: {
           include: { author: { select: { id: true, name: true, role: true } } },
           orderBy: { createdAt: 'asc' },
@@ -162,10 +196,7 @@ export class TicketsService {
     });
 
     if (!ticket) throw new NotFoundException('Ticket tidak ditemukan');
-
-    if (user.role === 'CUSTOMER' && ticket.requesterId !== user.userId) {
-      throw new ForbiddenException('Kamu tidak punya akses ke ticket ini');
-    }
+    this.assertDeptAccess(ticket, user);
 
     return { ...ticket, isOverdue: this.isOverdue(ticket) };
   }
@@ -189,10 +220,11 @@ export class TicketsService {
         throw new ForbiddenException('Kamu tidak punya akses ke ticket ini');
       }
       const { title, description } = dto;
-      return this.prisma.ticket.update({
-        where: { id },
-        data: { title, description },
-      });
+      return this.prisma.ticket.update({ where: { id }, data: { title, description } });
+    }
+
+    if (user.role !== 'SUPER_ADMIN' && ticket.departmentId !== user.departmentId) {
+      throw new ForbiddenException('Ticket ini bukan dari department kamu');
     }
 
     const data: any = { ...dto };
@@ -214,6 +246,7 @@ export class TicketsService {
         requester: { select: { id: true, name: true, email: true } },
         assignee: { select: { id: true, name: true, email: true } },
         category: true,
+        department: { select: { id: true, name: true } },
       },
     });
 
@@ -225,12 +258,7 @@ export class TicketsService {
           `Status ticket "${ticket.title}" berubah menjadi ${dto.status.replace('_', ' ')}`,
           ticket.id,
         ),
-        this.mailService.sendStatusChanged(
-          ticket.requester.email,
-          ticket.title,
-          ticket.id,
-          dto.status,
-        ),
+        this.mailService.sendStatusChanged(ticket.requester.email, ticket.title, ticket.id, dto.status),
         this.auditLogService.log(
           'STATUS_CHANGED',
           `Status diubah dari ${ticket.status.replace('_', ' ')} menjadi ${dto.status.replace('_', ' ')}`,
@@ -260,12 +288,7 @@ export class TicketsService {
             ticket.id,
           ),
           this.mailService.sendTicketAssigned(newAssignee.email, ticket.title, ticket.id),
-          this.auditLogService.log(
-            'ASSIGNED',
-            `Ticket di-assign ke ${newAssignee.name}`,
-            user.userId,
-            ticket.id,
-          ),
+          this.auditLogService.log('ASSIGNED', `Ticket di-assign ke ${newAssignee.name}`, user.userId, ticket.id),
         ]);
       }
     }
@@ -273,10 +296,31 @@ export class TicketsService {
     return updated;
   }
 
-  async remove(id: string) {
+  async remove(id: string, user: AuthUser) {
     const ticket = await this.prisma.ticket.findUnique({ where: { id } });
     if (!ticket) throw new NotFoundException('Ticket tidak ditemukan');
+    if (user.role !== 'SUPER_ADMIN' && ticket.departmentId !== user.departmentId) {
+      throw new ForbiddenException('Ticket ini bukan dari department kamu');
+    }
     return this.prisma.ticket.delete({ where: { id } });
+  }
+
+  async getStats(user: AuthUser) {
+    const where: any =
+      user.role === 'CUSTOMER'
+        ? { requesterId: user.userId }
+        : user.role === 'SUPER_ADMIN'
+          ? {}
+          : { departmentId: user.departmentId };
+
+    const [open, inProgress, resolved, closed, total] = await Promise.all([
+      this.prisma.ticket.count({ where: { ...where, status: 'OPEN' } }),
+      this.prisma.ticket.count({ where: { ...where, status: 'IN_PROGRESS' } }),
+      this.prisma.ticket.count({ where: { ...where, status: 'RESOLVED' } }),
+      this.prisma.ticket.count({ where: { ...where, status: 'CLOSED' } }),
+      this.prisma.ticket.count({ where }),
+    ]);
+    return { open, inProgress, resolved, closed, total };
   }
 
   async submitCsat(id: string, dto: SubmitCsatDto, user: AuthUser) {
@@ -295,26 +339,20 @@ export class TicketsService {
 
     const updated = await this.prisma.ticket.update({
       where: { id },
-      data: {
-        csatRating: dto.rating,
-        csatComment: dto.comment,
-        csatSubmittedAt: new Date(),
-      },
+      data: { csatRating: dto.rating, csatComment: dto.comment, csatSubmittedAt: new Date() },
     });
 
-    await this.auditLogService.log(
-      'CSAT_SUBMITTED',
-      `Rating diberikan: ${dto.rating}/5`,
-      user.userId,
-      id,
-    );
+    await this.auditLogService.log('CSAT_SUBMITTED', `Rating diberikan: ${dto.rating}/5`, user.userId, id);
 
     return updated;
   }
 
-  async getCsatStats() {
+  async getCsatStats(user: AuthUser) {
+    const where: any =
+      user.role === 'SUPER_ADMIN' ? { csatRating: { not: null } } : { csatRating: { not: null }, departmentId: user.departmentId };
+
     const rated = await this.prisma.ticket.findMany({
-      where: { csatRating: { not: null } },
+      where,
       select: {
         id: true,
         title: true,
@@ -333,23 +371,6 @@ export class TicketsService {
       count: rated.filter((t) => t.csatRating === star).length,
     }));
 
-    return {
-      total,
-      average: Math.round(average * 10) / 10,
-      distribution,
-      recent: rated.slice(0, 20),
-    };
-  }
-  
-  async getStats(user: AuthUser) {
-    const where: any = user.role === 'CUSTOMER' ? { requesterId: user.userId } : {};
-    const [open, inProgress, resolved, closed, total] = await Promise.all([
-      this.prisma.ticket.count({ where: { ...where, status: 'OPEN' } }),
-      this.prisma.ticket.count({ where: { ...where, status: 'IN_PROGRESS' } }),
-      this.prisma.ticket.count({ where: { ...where, status: 'RESOLVED' } }),
-      this.prisma.ticket.count({ where: { ...where, status: 'CLOSED' } }),
-      this.prisma.ticket.count({ where }),
-    ]);
-    return { open, inProgress, resolved, closed, total };
+    return { total, average: Math.round(average * 10) / 10, distribution, recent: rated.slice(0, 20) };
   }
 }
