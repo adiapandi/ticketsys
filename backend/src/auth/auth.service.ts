@@ -95,8 +95,16 @@ export class AuthService {
     return updated;
   }
   
-  private buildAuthResponse(user: { id: string; email: string; name: string; phone?: string | null; role: string }) {
-    const payload = { sub: user.id, email: user.email, role: user.role };
+  private buildAuthResponse(user: {
+    id: string;
+    email: string;
+    name: string;
+    phone?: string | null;
+    avatarUrl?: string | null;
+    role: string;
+    departmentId?: string | null;
+  }) {
+    const payload = { sub: user.id, email: user.email, role: user.role, departmentId: user.departmentId };
     return {
       accessToken: this.jwtService.sign(payload),
       user: {
@@ -104,7 +112,9 @@ export class AuthService {
         email: user.email,
         name: user.name,
         phone: user.phone,
+        avatarUrl: user.avatarUrl,
         role: user.role,
+        departmentId: user.departmentId,
       },
     };
   }
