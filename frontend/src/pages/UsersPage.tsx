@@ -1,6 +1,6 @@
-import { useEffect, useState, FormEvent } from 'react';
+import { useEffect, useState, FormEvent, useRef } from 'react';
 import { Navigate } from 'react-router-dom';
-import { usersManagementApi, AppUser } from '../api/users';
+import { usersManagementApi, AppUser, BulkImportResponse } from '../api/users';
 import { useAuth } from '../context/AuthContext';
 
 const roleBadgeColor: Record<string, string> = {
@@ -8,6 +8,20 @@ const roleBadgeColor: Record<string, string> = {
   AGENT: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
   CUSTOMER: 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300',
 };
+
+function downloadTemplate() {
+  const csvContent =
+    'name,email,password,role\n' +
+    'John Doe,[email protected],,CUSTOMER\n' +
+    'Jane Smith,[email protected],Passw0rd!,AGENT\n';
+  const blob = new Blob([csvContent], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'template-import-user.csv';
+  link.click();
+  URL.revokeObjectURL(url);
+}
 
 export function UsersPage() {
   const { user: currentUser } = useAuth();
@@ -21,6 +35,12 @@ export function UsersPage() {
   const [newPassword, setNewPassword] = useState('');
   const [newRole, setNewRole] = useState('CUSTOMER');
   const [creating, setCreating] = useState(false);
+
+  const [showImport, setShowImport] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<BulkImportResponse | null>(null);
+  const [importError, setImportError] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function load() {
     const { data } = await usersManagementApi.list();
@@ -81,20 +101,146 @@ export function UsersPage() {
     }
   }
 
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImportError('');
+    setImportResult(null);
+    setImporting(true);
+    try {
+      const { data } = await usersManagementApi.bulkImport(file);
+      setImportResult(data);
+      await load();
+    } catch (err: any) {
+      setImportError(err.response?.data?.message || 'Gagal import file');
+    } finally {
+      setImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  }
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
           <h1 className="text-xl font-semibold text-slate-800 dark:text-slate-100">Kelola User</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400">Atur role dan akses tiap user.</p>
         </div>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="bg-blue-600 text-white text-sm px-4 py-2 rounded-md hover:bg-blue-700"
-        >
-          {showForm ? 'Batal' : '+ Tambah User'}
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => {
+              setShowImport(!showImport);
+              setShowForm(false);
+            }}
+            className="border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-sm px-4 py-2 rounded-md hover:bg-slate-50 dark:hover:bg-slate-700"
+          >
+            {showImport ? 'Batal' : '📤 Import CSV/Excel'}
+          </button>
+          <button
+            onClick={() => {
+              setShowForm(!showForm);
+              setShowImport(false);
+            }}
+            className="bg-blue-600 text-white text-sm px-4 py-2 rounded-md hover:bg-blue-700"
+          >
+            {showForm ? 'Batal' : '+ Tambah User'}
+          </button>
+        </div>
       </div>
+
+      {showImport && (
+        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4 space-y-3">
+          <div>
+            <p className="text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
+              Import User dari CSV/Excel
+            </p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Kolom yang dibutuhkan: <code className="text-slate-600 dark:text-slate-300">name, email, password, role</code>.
+              Kolom <code className="text-slate-600 dark:text-slate-300">password</code> boleh dikosongkan (akan digenerate
+              otomatis), <code className="text-slate-600 dark:text-slate-300">role</code> boleh dikosongkan (default
+              CUSTOMER).
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={downloadTemplate}
+              className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+            >
+              ⬇ Download Template CSV
+            </button>
+          </div>
+
+          <div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv,.xlsx,.xls"
+              onChange={handleFileChange}
+              disabled={importing}
+              className="text-sm text-slate-600 dark:text-slate-300"
+            />
+            {importing && <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Memproses...</p>}
+          </div>
+
+          {importError && <p className="text-sm text-red-600 dark:text-red-400">{importError}</p>}
+
+          {importResult && (
+            <div className="space-y-2">
+              <div className="flex gap-4 text-sm">
+                <span className="text-slate-600 dark:text-slate-300">Total: {importResult.total}</span>
+                <span className="text-green-600 dark:text-green-400">Berhasil: {importResult.success}</span>
+                <span className="text-red-600 dark:text-red-400">Gagal: {importResult.failed}</span>
+              </div>
+              <div className="max-h-64 overflow-y-auto border border-slate-200 dark:border-slate-700 rounded-md">
+                <table className="w-full text-xs">
+                  <thead className="bg-slate-50 dark:bg-slate-700/50 sticky top-0">
+                    <tr>
+                      <th className="px-2 py-1.5 text-left text-slate-500 dark:text-slate-400">Baris</th>
+                      <th className="px-2 py-1.5 text-left text-slate-500 dark:text-slate-400">Email</th>
+                      <th className="px-2 py-1.5 text-left text-slate-500 dark:text-slate-400">Status</th>
+                      <th className="px-2 py-1.5 text-left text-slate-500 dark:text-slate-400">Keterangan</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                    {importResult.results.map((r) => (
+                      <tr key={r.row}>
+                        <td className="px-2 py-1.5 text-slate-500 dark:text-slate-400">{r.row}</td>
+                        <td className="px-2 py-1.5 text-slate-700 dark:text-slate-200">{r.email}</td>
+                        <td className="px-2 py-1.5">
+                          <span
+                            className={
+                              r.status === 'success'
+                                ? 'text-green-600 dark:text-green-400'
+                                : 'text-red-600 dark:text-red-400'
+                            }
+                          >
+                            {r.status === 'success' ? '✓ Sukses' : '✗ Gagal'}
+                          </span>
+                        </td>
+                        <td className="px-2 py-1.5 text-slate-500 dark:text-slate-400">
+                          {r.message}
+                          {r.generatedPassword && (
+                            <span className="ml-1 text-amber-600 dark:text-amber-400">
+                              (password: <code>{r.generatedPassword}</code>)
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {importResult.results.some((r) => r.generatedPassword) && (
+                <p className="text-xs text-amber-600 dark:text-amber-400">
+                  ⚠ Catat password yang digenerate otomatis di atas sebelum menutup halaman ini — password tidak
+                  disimpan dalam bentuk asli dan tidak bisa dilihat ulang.
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {showForm && (
         <form
