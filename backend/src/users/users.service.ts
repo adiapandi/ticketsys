@@ -3,6 +3,7 @@ import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { AuditLogService } from '../audit-log/audit-log.service';
+import * as XLSX from 'xlsx';
 
 @Injectable()
 export class UsersService {
@@ -85,6 +86,88 @@ export class UsersService {
       where: { id },
       select: { id: true, email: true, name: true, role: true, createdAt: true },
     });
+  }
+
+  async bulkImport(fileBuffer: Buffer, actorId: string) {
+    const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+    const rows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+
+    const results: {
+      row: number;
+      email: string;
+      status: 'success' | 'failed';
+      message: string;
+      generatedPassword?: string;
+    }[] = [];
+
+    let successCount = 0;
+    const validRoles = ['ADMIN', 'AGENT', 'CUSTOMER'];
+
+    for (let i = 0; i < rows.length; i++) {
+      const rowNum = i + 2; // baris 1 = header, jadi data pertama = baris 2
+      const raw = rows[i];
+
+      const name = String(raw.name || '').trim();
+      const email = String(raw.email || '').trim().toLowerCase();
+      let password = String(raw.password || '').trim();
+      const roleInput = String(raw.role || '').trim().toUpperCase();
+
+      if (!name || !email) {
+        results.push({
+          row: rowNum,
+          email: email || '(kosong)',
+          status: 'failed',
+          message: 'Nama dan email wajib diisi',
+        });
+        continue;
+      }
+
+      const role = validRoles.includes(roleInput) ? roleInput : 'CUSTOMER';
+
+      let generatedPassword: string | undefined;
+      if (!password) {
+        password = Math.random().toString(36).slice(-8) + 'A1!';
+        generatedPassword = password;
+      }
+
+      const existing = await this.prisma.user.findUnique({ where: { email } });
+      if (existing) {
+        results.push({ row: rowNum, email, status: 'failed', message: 'Email sudah terdaftar' });
+        continue;
+      }
+
+      try {
+        const hashed = await bcrypt.hash(password, 10);
+        await this.prisma.user.create({
+          data: { email, password: hashed, name, role: role as any },
+        });
+        successCount++;
+        results.push({
+          row: rowNum,
+          email,
+          status: 'success',
+          message: 'Berhasil dibuat',
+          generatedPassword,
+        });
+      } catch {
+        results.push({ row: rowNum, email, status: 'failed', message: 'Gagal membuat user' });
+      }
+    }
+
+    await this.auditLogService.log(
+      'BULK_USER_IMPORT',
+      `Import massal user: ${successCount} berhasil dari ${rows.length} baris`,
+      actorId,
+    );
+
+    return {
+      total: rows.length,
+      success: successCount,
+      failed: rows.length - successCount,
+      results,
+    };
   }
 
   async remove(id: string, requestingUserId: string) {
