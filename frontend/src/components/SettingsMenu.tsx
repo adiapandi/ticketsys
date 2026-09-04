@@ -18,7 +18,9 @@ export function SettingsMenu() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  if (!user || (user.role !== 'ADMIN' && user.role !== 'AGENT')) return null;
+  if (!user || user.role === 'CUSTOMER') return null;
+
+  const isAdminLike = user.role === 'SUPER_ADMIN' || user.role === 'ADMIN';
 
   return (
     <div className="relative" ref={containerRef}>
@@ -39,7 +41,7 @@ export function SettingsMenu() {
           >
             Template Balasan
           </Link>
-          {user.role === 'ADMIN' && (
+          {isAdminLike && (
             <>
               <Link
                 to="/admin/categories"
@@ -56,6 +58,15 @@ export function SettingsMenu() {
                 Kelola User
               </Link>
             </>
+          )}
+          {user.role === 'SUPER_ADMIN' && (
+            <Link
+              to="/admin/departments"
+              onClick={() => setOpen(false)}
+              className="block px-4 py-2 text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
+            >
+              Department
+            </Link>
           )}
         </div>
       )}
