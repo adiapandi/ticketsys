@@ -9,6 +9,7 @@ import { MailService } from '../mail/mail.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { SlaService } from '../sla/sla.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
+import * as XLSX from 'xlsx';
 
 interface AuthUser {
   userId: string;
@@ -345,6 +346,65 @@ export class TicketsService {
     await this.auditLogService.log('CSAT_SUBMITTED', `Rating diberikan: ${dto.rating}/5`, user.userId, id);
 
     return updated;
+  }
+
+  async exportTickets(query: QueryTicketDto, format: 'csv' | 'xlsx', user: AuthUser): Promise<Buffer> {
+    const where: any = {};
+
+    if (user.role === 'CUSTOMER') {
+      where.requesterId = user.userId;
+    } else if (user.role === 'SUPER_ADMIN') {
+      if (query.departmentId) where.departmentId = query.departmentId;
+    } else {
+      where.departmentId = user.departmentId;
+    }
+
+    if (query.status) where.status = query.status;
+    if (query.priority) where.priority = query.priority;
+    if (query.assigneeId) where.assigneeId = query.assigneeId;
+    if (query.search) {
+      where.OR = [
+        { title: { contains: query.search, mode: 'insensitive' } },
+        { description: { contains: query.search, mode: 'insensitive' } },
+      ];
+    }
+
+    const tickets = await this.prisma.ticket.findMany({
+      where,
+      include: {
+        requester: { select: { name: true, email: true } },
+        assignee: { select: { name: true } },
+        category: { select: { name: true } },
+        department: { select: { name: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 5000, // batas wajar biar tidak membebani server untuk export raksasa
+    });
+
+    const rows = tickets.map((t) => ({
+      'Ticket ID': t.id,
+      Judul: t.title,
+      Deskripsi: t.description,
+      Status: t.status,
+      Priority: t.priority,
+      Department: t.department?.name || '',
+      Kategori: t.category?.name || '',
+      Requester: t.requester.name,
+      'Email Requester': t.requester.email,
+      Assignee: t.assignee?.name || 'Belum di-assign',
+      'Dibuat Pada': t.createdAt.toISOString(),
+      'Update Terakhir': t.updatedAt.toISOString(),
+      'Ditutup Pada': t.closedAt ? t.closedAt.toISOString() : '',
+      'SLA Breached': t.slaBreached ? 'Ya' : 'Tidak',
+      'Rating CSAT': t.csatRating ?? '',
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Tickets');
+
+    const bookType = format === 'csv' ? 'csv' : 'xlsx';
+    return XLSX.write(workbook, { type: 'buffer', bookType });
   }
 
   async getCsatStats(user: AuthUser) {
