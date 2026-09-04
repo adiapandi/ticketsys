@@ -7,7 +7,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('ADMIN', 'AGENT')
+@Roles('SUPER_ADMIN', 'ADMIN', 'AGENT')
 @Controller('canned-responses')
 export class CannedResponsesController {
   constructor(private cannedResponsesService: CannedResponsesService) {}
