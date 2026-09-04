@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ticketsApi, Ticket } from '../api/tickets';
+import { departmentsApi, Department } from '../api/departments';
 import { StatusBadge, PriorityBadge, SlaBadge } from '../components/Badges';
+import { useAuth } from '../context/AuthContext';
 
 const STATUS_OPTIONS = ['', 'OPEN', 'IN_PROGRESS', 'PENDING', 'RESOLVED', 'CLOSED'];
 const PRIORITY_OPTIONS = ['', 'LOW', 'MEDIUM', 'HIGH', 'URGENT'];
@@ -15,7 +17,10 @@ const SORT_OPTIONS = [
 const PAGE_SIZE = 15;
 
 export function TicketListPage() {
+  const { user } = useAuth();
   const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [departmentFilter, setDepartmentFilter] = useState('');
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -37,6 +42,7 @@ export function TicketListPage() {
     if (status) params.status = status;
     if (priority) params.priority = priority;
     if (search) params.search = search;
+    if (departmentFilter) params.departmentId = departmentFilter;
     const { data } = await ticketsApi.list(params);
     setTickets(data.data);
     setTotal(data.total);
@@ -45,9 +51,16 @@ export function TicketListPage() {
   }
 
   useEffect(() => {
+    if (user?.role === 'SUPER_ADMIN') {
+      departmentsApi.list().then((res) => setDepartments(res.data));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, priority, page, sortIndex]);
+  }, [status, priority, page, sortIndex, departmentFilter]);
 
   function handleSearchSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -109,6 +122,26 @@ export function TicketListPage() {
             ))}
           </select>
         </div>
+        {user?.role === 'SUPER_ADMIN' && (
+          <div>
+            <label className="text-xs text-slate-500 dark:text-slate-400">Department</label>
+            <select
+              value={departmentFilter}
+              onChange={(e) => {
+                setDepartmentFilter(e.target.value);
+                setPage(1);
+              }}
+              className="block mt-1 px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+            >
+              <option value="">Semua Department</option>
+              {departments.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
         <div>
           <label className="text-xs text-slate-500 dark:text-slate-400">Urutkan</label>
           <select
