@@ -1,9 +1,11 @@
 import { useEffect, useState, FormEvent, useRef } from 'react';
 import { Navigate } from 'react-router-dom';
 import { usersManagementApi, AppUser, BulkImportResponse } from '../api/users';
+import { departmentsApi, Department } from '../api/departments';
 import { useAuth } from '../context/AuthContext';
 
 const roleBadgeColor: Record<string, string> = {
+  SUPER_ADMIN: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
   ADMIN: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
   AGENT: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
   CUSTOMER: 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300',
@@ -25,7 +27,10 @@ function downloadTemplate() {
 
 export function UsersPage() {
   const { user: currentUser } = useAuth();
+  const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
+
   const [users, setUsers] = useState<AppUser[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -34,6 +39,7 @@ export function UsersPage() {
   const [newEmail, setNewEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [newRole, setNewRole] = useState('CUSTOMER');
+  const [newDepartmentId, setNewDepartmentId] = useState('');
   const [creating, setCreating] = useState(false);
 
   const [showImport, setShowImport] = useState(false);
@@ -50,11 +56,22 @@ export function UsersPage() {
 
   useEffect(() => {
     load();
+    if (isSuperAdmin) {
+      departmentsApi.list().then((res) => setDepartments(res.data));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (currentUser?.role !== 'ADMIN') {
+  if (currentUser?.role !== 'SUPER_ADMIN' && currentUser?.role !== 'ADMIN') {
     return <Navigate to="/" replace />;
   }
+
+  // Role apa aja yang boleh dipilih actor sekarang, saat bikin/ubah user
+  const availableRoles = isSuperAdmin
+    ? ['CUSTOMER', 'AGENT', 'ADMIN', 'SUPER_ADMIN']
+    : ['CUSTOMER', 'AGENT'];
+
+  const needsDepartment = newRole === 'ADMIN' || newRole === 'AGENT';
 
   async function handleCreate(e: FormEvent) {
     e.preventDefault();
@@ -66,11 +83,13 @@ export function UsersPage() {
         email: newEmail,
         password: newPassword,
         role: newRole,
-      });
+        ...(isSuperAdmin && needsDepartment ? { departmentId: newDepartmentId } : {}),
+      } as any);
       setNewName('');
       setNewEmail('');
       setNewPassword('');
       setNewRole('CUSTOMER');
+      setNewDepartmentId('');
       setShowForm(false);
       await load();
     } catch (err: any) {
@@ -124,7 +143,9 @@ export function UsersPage() {
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
           <h1 className="text-xl font-semibold text-slate-800 dark:text-slate-100">Kelola User</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">Atur role dan akses tiap user.</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            {isSuperAdmin ? 'Atur role dan akses semua user.' : 'Atur role dan akses user di department kamu.'}
+          </p>
         </div>
         <div className="flex gap-2">
           <button
@@ -155,22 +176,13 @@ export function UsersPage() {
               Import User dari CSV/Excel
             </p>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Kolom yang dibutuhkan: <code className="text-slate-600 dark:text-slate-300">name, email, password, role</code>.
-              Kolom <code className="text-slate-600 dark:text-slate-300">password</code> boleh dikosongkan (akan digenerate
-              otomatis), <code className="text-slate-600 dark:text-slate-300">role</code> boleh dikosongkan (default
-              CUSTOMER).
+              Kolom: <code className="text-slate-600 dark:text-slate-300">name, email, password, role</code>.
+              {!isSuperAdmin && ' Staff yang diimport otomatis masuk department kamu sendiri.'}
             </p>
           </div>
-
-          <div className="flex items-center gap-3">
-            <button
-              onClick={downloadTemplate}
-              className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-            >
-              ⬇ Download Template CSV
-            </button>
-          </div>
-
+          <button onClick={downloadTemplate} className="text-xs text-blue-600 dark:text-blue-400 hover:underline">
+            ⬇ Download Template CSV
+          </button>
           <div>
             <input
               ref={fileInputRef}
@@ -182,9 +194,7 @@ export function UsersPage() {
             />
             {importing && <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Memproses...</p>}
           </div>
-
           {importError && <p className="text-sm text-red-600 dark:text-red-400">{importError}</p>}
-
           {importResult && (
             <div className="space-y-2">
               <div className="flex gap-4 text-sm">
@@ -208,13 +218,7 @@ export function UsersPage() {
                         <td className="px-2 py-1.5 text-slate-500 dark:text-slate-400">{r.row}</td>
                         <td className="px-2 py-1.5 text-slate-700 dark:text-slate-200">{r.email}</td>
                         <td className="px-2 py-1.5">
-                          <span
-                            className={
-                              r.status === 'success'
-                                ? 'text-green-600 dark:text-green-400'
-                                : 'text-red-600 dark:text-red-400'
-                            }
-                          >
+                          <span className={r.status === 'success' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
                             {r.status === 'success' ? '✓ Sukses' : '✗ Gagal'}
                           </span>
                         </td>
@@ -231,22 +235,13 @@ export function UsersPage() {
                   </tbody>
                 </table>
               </div>
-              {importResult.results.some((r) => r.generatedPassword) && (
-                <p className="text-xs text-amber-600 dark:text-amber-400">
-                  ⚠ Catat password yang digenerate otomatis di atas sebelum menutup halaman ini — password tidak
-                  disimpan dalam bentuk asli dan tidak bisa dilihat ulang.
-                </p>
-              )}
             </div>
           )}
         </div>
       )}
 
       {showForm && (
-        <form
-          onSubmit={handleCreate}
-          className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4 space-y-3"
-        >
+        <form onSubmit={handleCreate} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4 space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs text-slate-500 dark:text-slate-400">Nama</label>
@@ -285,11 +280,31 @@ export function UsersPage() {
                 onChange={(e) => setNewRole(e.target.value)}
                 className="w-full mt-1 px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
               >
-                <option value="CUSTOMER">CUSTOMER</option>
-                <option value="AGENT">AGENT</option>
-                <option value="ADMIN">ADMIN</option>
+                {availableRoles.map((r) => (
+                  <option key={r} value={r}>
+                    {r}
+                  </option>
+                ))}
               </select>
             </div>
+            {isSuperAdmin && needsDepartment && (
+              <div className="col-span-2">
+                <label className="text-xs text-slate-500 dark:text-slate-400">Department</label>
+                <select
+                  required
+                  value={newDepartmentId}
+                  onChange={(e) => setNewDepartmentId(e.target.value)}
+                  className="w-full mt-1 px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                >
+                  <option value="">Pilih department...</option>
+                  {departments.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
           <button
             type="submit"
@@ -310,6 +325,7 @@ export function UsersPage() {
               <th className="px-4 py-2.5">Nama</th>
               <th className="px-4 py-2.5">Email</th>
               <th className="px-4 py-2.5">Role</th>
+              <th className="px-4 py-2.5">Department</th>
               <th className="px-4 py-2.5">Ticket Dibuat</th>
               <th className="px-4 py-2.5">Ticket Ditangani</th>
               <th className="px-4 py-2.5"></th>
@@ -318,54 +334,49 @@ export function UsersPage() {
           <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
             {loading && (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-slate-400 dark:text-slate-500">
+                <td colSpan={7} className="px-4 py-6 text-center text-slate-400 dark:text-slate-500">
                   Memuat...
                 </td>
               </tr>
             )}
             {!loading && users.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-slate-400 dark:text-slate-500">
+                <td colSpan={7} className="px-4 py-6 text-center text-slate-400 dark:text-slate-500">
                   Tidak ada user.
                 </td>
               </tr>
             )}
-            {users.map((u) => (
+            {users.map((u: any) => (
               <tr key={u.id}>
                 <td className="px-4 py-2.5 font-medium text-slate-800 dark:text-slate-100">
                   {u.name}
-                  {u.id === currentUser?.id && (
-                    <span className="ml-1.5 text-xs text-slate-400 dark:text-slate-500">(kamu)</span>
-                  )}
+                  {u.id === currentUser?.id && <span className="ml-1.5 text-xs text-slate-400 dark:text-slate-500">(kamu)</span>}
                 </td>
                 <td className="px-4 py-2.5 text-slate-500 dark:text-slate-400">{u.email}</td>
                 <td className="px-4 py-2.5">
                   {u.id === currentUser?.id ? (
-                    <span
-                      className={`text-xs px-2 py-0.5 rounded-full font-medium ${roleBadgeColor[u.role]}`}
-                    >
-                      {u.role}
-                    </span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${roleBadgeColor[u.role]}`}>{u.role}</span>
                   ) : (
                     <select
                       value={u.role}
                       onChange={(e) => handleRoleChange(u.id, e.target.value)}
                       className="text-xs border border-slate-300 dark:border-slate-600 rounded-md px-2 py-1 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
                     >
-                      <option value="CUSTOMER">CUSTOMER</option>
-                      <option value="AGENT">AGENT</option>
-                      <option value="ADMIN">ADMIN</option>
+                      {availableRoles.includes(u.role) ? null : <option value={u.role}>{u.role}</option>}
+                      {availableRoles.map((r) => (
+                        <option key={r} value={r}>
+                          {r}
+                        </option>
+                      ))}
                     </select>
                   )}
                 </td>
+                <td className="px-4 py-2.5 text-slate-500 dark:text-slate-400">{u.department?.name || '—'}</td>
                 <td className="px-4 py-2.5 text-slate-500 dark:text-slate-400">{u._count?.ticketsCreated ?? 0}</td>
                 <td className="px-4 py-2.5 text-slate-500 dark:text-slate-400">{u._count?.ticketsAssigned ?? 0}</td>
                 <td className="px-4 py-2.5 text-right">
                   {u.id !== currentUser?.id && (
-                    <button
-                      onClick={() => handleDelete(u.id, u.name)}
-                      className="text-xs text-red-600 dark:text-red-400 hover:underline"
-                    >
+                    <button onClick={() => handleDelete(u.id, u.name)} className="text-xs text-red-600 dark:text-red-400 hover:underline">
                       Hapus
                     </button>
                   )}
