@@ -40,9 +40,9 @@ export class TicketsController {
   }
 
   @Get('csat-stats')
-  @Roles('ADMIN', 'AGENT')
-  getCsatStats() {
-    return this.ticketsService.getCsatStats();
+  @Roles('SUPER_ADMIN', 'ADMIN', 'AGENT')
+  getCsatStats(@CurrentUser() user: any) {
+    return this.ticketsService.getCsatStats(user);
   }
 
   @Get(':id')
@@ -61,8 +61,8 @@ export class TicketsController {
   }
 
   @Delete(':id')
-  @Roles('ADMIN')
-  remove(@Param('id') id: string) {
-    return this.ticketsService.remove(id);
+  @Roles('SUPER_ADMIN', 'ADMIN')
+  remove(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.ticketsService.remove(id, user);
   }
 }
