@@ -14,7 +14,7 @@ const PRIORITY_OPTIONS = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'];
 export function TicketDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
-  const isStaff = user?.role === 'ADMIN' || user?.role === 'AGENT';
+  const isStaff = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN' || user?.role === 'AGENT';
 
   const [ticket, setTicket] = useState<(Ticket & { comments: Comment[] }) | null>(null);
   const [agents, setAgents] = useState<{ id: string; name: string; email: string }[]>([]);
@@ -33,12 +33,16 @@ export function TicketDetailPage() {
 
   useEffect(() => {
     load();
-    if (isStaff) {
-      usersApi.agents().then((res) => setAgents(res.data));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
+  useEffect(() => {
+    if (isStaff && ticket) {
+      usersApi.agents(ticket.departmentId || undefined).then((res) => setAgents(res.data));
       cannedResponsesApi.list().then((res) => setCannedResponses(res.data));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  }, [ticket?.id]);
 
   async function handleCommentSubmit(e: FormEvent) {
     e.preventDefault();
@@ -84,6 +88,7 @@ export function TicketDetailPage() {
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             Dibuat oleh {ticket.requester.name} · {new Date(ticket.createdAt).toLocaleString('id-ID')}
+            {ticket.department && ` · ${ticket.department.name}`}
           </p>
           <p className="text-sm text-slate-700 dark:text-slate-200 mt-4 whitespace-pre-wrap">{ticket.description}</p>
         </div>
