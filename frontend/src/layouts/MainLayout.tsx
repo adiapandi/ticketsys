@@ -9,6 +9,7 @@ import { ReportsMenu } from '../components/ReportsMenu';
 import { Plus } from 'lucide-react';
 
 const roleBadgeColor: Record<string, string> = {
+  SUPER_ADMIN: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
   ADMIN: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
   AGENT: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
   CUSTOMER: 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300',
