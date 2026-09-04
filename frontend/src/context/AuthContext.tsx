@@ -8,7 +8,8 @@ interface User {
   name: string;
   phone?: string | null;
   avatarUrl?: string | null;
-  role: 'ADMIN' | 'AGENT' | 'CUSTOMER';
+  role: 'SUPER_ADMIN' | 'ADMIN' | 'AGENT' | 'CUSTOMER';
+  departmentId?: string | null;
 }
 
 interface AuthContextType {
