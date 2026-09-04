@@ -19,6 +19,7 @@ export interface Ticket {
   requester: { id: string; name: string; email: string };
   assignee?: { id: string; name: string; email: string } | null;
   category?: { id: string; name: string } | null;
+  department?: { id: string; name: string } | null;
   _count?: { comments: number };
 }
 
@@ -63,6 +64,7 @@ export const ticketsApi = {
     description: string;
     priority?: string;
     categoryId?: string;
+    departmentId: string;
     requestedForUserId?: string;
     assigneeId?: string;
   }) =>
@@ -86,7 +88,10 @@ export const commentsApi = {
 };
 
 export const usersApi = {
-  agents: () => api.get<{ id: string; name: string; email: string }[]>('/users/agents'),
+  agents: (departmentId?: string) =>
+    api.get<{ id: string; name: string; email: string }[]>('/users/agents', {
+      params: departmentId ? { departmentId } : undefined,
+    }),
 };
 
 export const attachmentsApi = {
