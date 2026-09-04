@@ -1,5 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+
+interface AuthUser {
+  userId: string;
+  role: 'SUPER_ADMIN' | 'ADMIN' | 'AGENT' | 'CUSTOMER';
+  departmentId?: string | null;
+}
 
 @Injectable()
 export class AuditLogService {
@@ -16,7 +22,23 @@ export class AuditLogService {
     });
   }
 
-  findAll(ticketId?: string) {
+  async findAll(ticketId: string | undefined, actor: AuthUser) {
+    // Non-Super Admin wajib sebutkan ticketId spesifik, dan itu harus dari department dia sendiri.
+    // Sebelumnya endpoint ini bisa dipanggil tanpa ticketId dan balikin SEMUA log lintas department.
+    if (actor.role !== 'SUPER_ADMIN') {
+      if (!ticketId) {
+        throw new ForbiddenException('ticketId wajib disertakan');
+      }
+      const ticket = await this.prisma.ticket.findUnique({
+        where: { id: ticketId },
+        select: { departmentId: true },
+      });
+      if (!ticket) throw new NotFoundException('Ticket tidak ditemukan');
+      if (ticket.departmentId !== actor.departmentId) {
+        throw new ForbiddenException('Ticket ini bukan dari department kamu');
+      }
+    }
+
     return this.prisma.auditLog.findMany({
       where: ticketId ? { ticketId } : undefined,
       orderBy: { createdAt: 'desc' },
