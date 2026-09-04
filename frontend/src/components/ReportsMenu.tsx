@@ -18,7 +18,7 @@ export function ReportsMenu() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  if (!user || (user.role !== 'ADMIN' && user.role !== 'AGENT')) return null;
+  if (!user || user.role === 'CUSTOMER') return null;
 
   return (
     <div className="relative" ref={containerRef}>
