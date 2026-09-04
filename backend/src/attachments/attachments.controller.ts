@@ -32,12 +32,12 @@ export class AttachmentsController {
     @UploadedFile() file: Express.Multer.File,
     @CurrentUser() user: any,
   ) {
-    return this.attachmentsService.create(ticketId, file, user.userId);
+    return this.attachmentsService.create(ticketId, file, user);
   }
 
   @Get()
-  findByTicket(@Param('ticketId') ticketId: string) {
-    return this.attachmentsService.findByTicket(ticketId);
+  findByTicket(@Param('ticketId') ticketId: string, @CurrentUser() user: any) {
+    return this.attachmentsService.findByTicket(ticketId, user);
   }
 }
 
@@ -48,10 +48,7 @@ export class AttachmentDownloadController {
 
   @Get(':id/download')
   async download(@Param('id') id: string, @CurrentUser() user: any, @Res() res: Response) {
-    const { filePath, filename, mimetype } = await this.attachmentsService.getFileForDownload(
-      id,
-      user,
-    );
+    const { filePath, filename, mimetype } = await this.attachmentsService.getFileForDownload(id, user);
     if (!fs.existsSync(filePath)) {
       throw new NotFoundException('File fisik tidak ditemukan di server');
     }
@@ -62,7 +59,7 @@ export class AttachmentDownloadController {
 
   @Delete(':id')
   @Roles('SUPER_ADMIN', 'ADMIN', 'AGENT')
-  remove(@Param('id') id: string) {
-    return this.attachmentsService.remove(id);
+  remove(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.attachmentsService.remove(id, user);
   }
 }
