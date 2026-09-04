@@ -7,8 +7,10 @@ import {
   Param,
   Body,
   Query,
+  Res,
   UseGuards,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { TicketsService } from './tickets.service';
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { UpdateTicketDto } from './dto/update-ticket.dto';
@@ -43,6 +45,26 @@ export class TicketsController {
   @Roles('SUPER_ADMIN', 'ADMIN', 'AGENT')
   getCsatStats(@CurrentUser() user: any) {
     return this.ticketsService.getCsatStats(user);
+  }
+
+  @Get('export')
+  @Roles('SUPER_ADMIN', 'ADMIN', 'AGENT')
+  async exportTickets(
+    @Query() query: QueryTicketDto,
+    @Query('format') format: 'csv' | 'xlsx' = 'xlsx',
+    @CurrentUser() user: any,
+    @Res() res: Response,
+  ) {
+    const buffer = await this.ticketsService.exportTickets(query, format, user);
+    const mimetype =
+      format === 'csv'
+        ? 'text/csv'
+        : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    const filename = `tickets-export-${new Date().toISOString().slice(0, 10)}.${format}`;
+
+    res.setHeader('Content-Type', mimetype);
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(buffer);
   }
 
   @Get(':id')
