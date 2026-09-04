@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ticketsApi, Ticket } from '../api/tickets';
 import { departmentsApi, Department } from '../api/departments';
+import { Download } from 'lucide-react';
 import { StatusBadge, PriorityBadge, SlaBadge } from '../components/Badges';
 import { useAuth } from '../context/AuthContext';
 
@@ -21,6 +22,32 @@ export function TicketListPage() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [departmentFilter, setDepartmentFilter] = useState('');
+  const [exporting, setExporting] = useState(false);
+
+  async function handleExport(format: 'csv' | 'xlsx') {
+    setExporting(true);
+    try {
+      const sort = SORT_OPTIONS[sortIndex];
+      const params: Record<string, string> = { format, sortBy: sort.sortBy, order: sort.order };
+      if (status) params.status = status;
+      if (priority) params.priority = priority;
+      if (search) params.search = search;
+      if (departmentFilter) params.departmentId = departmentFilter;
+
+      const res = await ticketsApi.export(params);
+      const blob = new Blob([res.data]);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `tickets-export-${new Date().toISOString().slice(0, 10)}.${format}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } finally {
+      setExporting(false);
+    }
+  }
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -74,14 +101,36 @@ export function TicketListPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="flex items-center justify-between flex-wrap gap-2">
         <h1 className="text-xl font-semibold text-slate-800 dark:text-slate-100">Semua Tiket</h1>
-        <Link
-          to="/tickets/new"
-          className="bg-blue-600 text-white text-sm px-4 py-2 rounded-md hover:bg-blue-700"
-        >
-          + Ticket Baru
-        </Link>
+        <div className="flex gap-2">
+          {(user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN' || user?.role === 'AGENT') && (
+            <div className="flex gap-1">
+              <button
+                onClick={() => handleExport('xlsx')}
+                disabled={exporting}
+                className="flex items-center gap-1.5 border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-sm px-3 py-2 rounded-md hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50"
+              >
+                <Download size={14} strokeWidth={1.75} />
+                Excel
+              </button>
+              <button
+                onClick={() => handleExport('csv')}
+                disabled={exporting}
+                className="flex items-center gap-1.5 border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-sm px-3 py-2 rounded-md hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50"
+              >
+                <Download size={14} strokeWidth={1.75} />
+                CSV
+              </button>
+            </div>
+          )}
+          <Link
+            to="/tickets/new"
+            className="bg-blue-600 text-white text-sm px-4 py-2 rounded-md hover:bg-blue-700"
+          >
+            + Ticket Baru
+          </Link>
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-3 items-end bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4">
