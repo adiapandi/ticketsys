@@ -1,39 +1,60 @@
 import { useEffect, useState, FormEvent } from 'react';
 import { categoriesApi, Category } from '../api/categories';
+import { departmentsApi, Department } from '../api/departments';
 import { useAuth } from '../context/AuthContext';
 import { Navigate } from 'react-router-dom';
 
 export function CategoriesPage() {
   const { user } = useAuth();
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+
   const [categories, setCategories] = useState<Category[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [selectedDeptId, setSelectedDeptId] = useState('');
   const [newName, setNewName] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  async function load() {
-    const { data } = await categoriesApi.list();
+  async function load(deptId?: string) {
+    setLoading(true);
+    const { data } = await categoriesApi.list(deptId);
     setCategories(data);
     setLoading(false);
   }
 
   useEffect(() => {
-    load();
+    if (isSuperAdmin) {
+      departmentsApi.list().then((res) => setDepartments(res.data));
+      load(); // super admin default lihat semua
+    } else {
+      load(user?.departmentId || undefined);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (user?.role !== 'ADMIN') {
+  if (user?.role !== 'SUPER_ADMIN' && user?.role !== 'ADMIN') {
     return <Navigate to="/" replace />;
+  }
+
+  function handleDeptFilterChange(deptId: string) {
+    setSelectedDeptId(deptId);
+    load(deptId || undefined);
   }
 
   async function handleCreate(e: FormEvent) {
     e.preventDefault();
     if (!newName.trim()) return;
+    if (isSuperAdmin && !selectedDeptId) {
+      setError('Pilih department dulu sebelum menambah kategori');
+      return;
+    }
     setError('');
     try {
-      await categoriesApi.create(newName.trim());
+      await categoriesApi.create(newName.trim(), isSuperAdmin ? selectedDeptId : undefined);
       setNewName('');
-      await load();
+      await load(isSuperAdmin ? selectedDeptId : user?.departmentId || undefined);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Gagal membuat kategori');
     }
@@ -50,7 +71,7 @@ export function CategoriesPage() {
     try {
       await categoriesApi.update(id, editingName.trim());
       setEditingId(null);
-      await load();
+      await load(isSuperAdmin ? selectedDeptId : user?.departmentId || undefined);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Gagal update kategori');
     }
@@ -63,15 +84,33 @@ export function CategoriesPage() {
         : `Hapus kategori "${name}"?`;
     if (!window.confirm(confirmMsg)) return;
     await categoriesApi.remove(id);
-    await load();
+    await load(isSuperAdmin ? selectedDeptId : user?.departmentId || undefined);
   }
 
   return (
     <div className="max-w-lg space-y-4">
       <div>
         <h1 className="text-xl font-semibold text-slate-800 dark:text-slate-100">Kelola Kategori</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400">Kategori dipakai untuk mengelompokkan ticket.</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400">Kategori dipakai untuk mengelompokkan ticket per department.</p>
       </div>
+
+      {isSuperAdmin && (
+        <div>
+          <label className="text-xs text-slate-500 dark:text-slate-400">Filter Department</label>
+          <select
+            value={selectedDeptId}
+            onChange={(e) => handleDeptFilterChange(e.target.value)}
+            className="block mt-1 w-full px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+          >
+            <option value="">Semua Department</option>
+            {departments.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <form onSubmit={handleCreate} className="flex gap-2">
         <input
@@ -80,13 +119,15 @@ export function CategoriesPage() {
           placeholder="Nama kategori baru"
           className="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
         />
-        <button
-          type="submit"
-          className="bg-blue-600 text-white text-sm px-4 py-2 rounded-md hover:bg-blue-700"
-        >
+        <button type="submit" className="bg-blue-600 text-white text-sm px-4 py-2 rounded-md hover:bg-blue-700">
           Tambah
         </button>
       </form>
+      {isSuperAdmin && !selectedDeptId && (
+        <p className="text-xs text-amber-600 dark:text-amber-400">
+          ⚠ Pilih department di filter atas dulu sebelum menambah kategori baru.
+        </p>
+      )}
 
       {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
@@ -105,16 +146,10 @@ export function CategoriesPage() {
                   className="flex-1 px-2 py-1 border border-slate-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
                   autoFocus
                 />
-                <button
-                  onClick={() => handleUpdate(cat.id)}
-                  className="text-sm text-green-600 dark:text-green-400 hover:underline"
-                >
+                <button onClick={() => handleUpdate(cat.id)} className="text-sm text-green-600 dark:text-green-400 hover:underline">
                   Simpan
                 </button>
-                <button
-                  onClick={() => setEditingId(null)}
-                  className="text-sm text-slate-400 dark:text-slate-500 hover:underline"
-                >
+                <button onClick={() => setEditingId(null)} className="text-sm text-slate-400 dark:text-slate-500 hover:underline">
                   Batal
                 </button>
               </div>
@@ -122,15 +157,13 @@ export function CategoriesPage() {
               <>
                 <div>
                   <span className="text-sm text-slate-800 dark:text-slate-100">{cat.name}</span>
-                  <span className="text-xs text-slate-400 dark:text-slate-500 ml-2">
-                    {cat._count?.tickets ?? 0} ticket
-                  </span>
+                  {isSuperAdmin && cat.department && (
+                    <span className="text-xs text-blue-500 dark:text-blue-400 ml-2">({cat.department.name})</span>
+                  )}
+                  <span className="text-xs text-slate-400 dark:text-slate-500 ml-2">{cat._count?.tickets ?? 0} ticket</span>
                 </div>
                 <div className="flex gap-3">
-                  <button
-                    onClick={() => startEdit(cat)}
-                    className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-                  >
+                  <button onClick={() => startEdit(cat)} className="text-xs text-blue-600 dark:text-blue-400 hover:underline">
                     Edit
                   </button>
                   <button
