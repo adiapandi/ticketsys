@@ -2,17 +2,20 @@ import { useState, useEffect, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ticketsApi, attachmentsApi, usersApi } from '../api/tickets';
 import { categoriesApi, Category } from '../api/categories';
+import { departmentsApi, Department } from '../api/departments';
 import { usersManagementApi, AppUser } from '../api/users';
 import { useAuth } from '../context/AuthContext';
 
 export function CreateTicketPage() {
   const navigate = useNavigate();
   const { user: currentUser } = useAuth();
-  const isStaff = currentUser?.role === 'ADMIN' || currentUser?.role === 'AGENT';
+  const isStaff = currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'ADMIN' || currentUser?.role === 'AGENT';
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState('MEDIUM');
+  const [departmentId, setDepartmentId] = useState('');
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [categoryId, setCategoryId] = useState('');
   const [categories, setCategories] = useState<Category[]>([]);
   const [files, setFiles] = useState<File[]>([]);
@@ -24,17 +27,43 @@ export function CreateTicketPage() {
   const [requestedForUserId, setRequestedForUserId] = useState('');
   const [assigneeId, setAssigneeId] = useState('');
 
+  // Load department sekali di awal. Staff dept-scoped otomatis default ke department-nya sendiri.
   useEffect(() => {
-    categoriesApi.list().then((res) => setCategories(res.data));
+    departmentsApi.list().then((res) => {
+      setDepartments(res.data);
+      if (currentUser?.departmentId) {
+        setDepartmentId(currentUser.departmentId);
+      } else if (res.data.length === 1) {
+        setDepartmentId(res.data[0].id);
+      }
+    });
     if (isStaff) {
       usersManagementApi.list().then((res) => setAllUsers(res.data));
-      usersApi.agents().then((res) => {
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Reload kategori & daftar agent tiap kali department yang dipilih berubah
+  useEffect(() => {
+    if (!departmentId) {
+      setCategories([]);
+      setAgents([]);
+      return;
+    }
+    categoriesApi.list(departmentId).then((res) => setCategories(res.data));
+    setCategoryId('');
+    if (isStaff) {
+      usersApi.agents(departmentId).then((res) => {
         setAgents(res.data);
-        if (currentUser) setAssigneeId(currentUser.id);
+        if (currentUser && res.data.some((a) => a.id === currentUser.id)) {
+          setAssigneeId(currentUser.id);
+        } else {
+          setAssigneeId('');
+        }
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isStaff]);
+  }, [departmentId]);
 
   function handleFilesChange(e: React.ChangeEvent<HTMLInputElement>) {
     if (e.target.files) setFiles(Array.from(e.target.files));
@@ -42,6 +71,10 @@ export function CreateTicketPage() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (!departmentId) {
+      setError('Pilih department dulu ya');
+      return;
+    }
     setError('');
     setSubmitting(true);
     try {
@@ -50,6 +83,7 @@ export function CreateTicketPage() {
         description,
         priority,
         categoryId: categoryId || undefined,
+        departmentId,
         ...(isStaff && {
           requestedForUserId: requestedForUserId || undefined,
           assigneeId: assigneeId || undefined,
@@ -73,6 +107,23 @@ export function CreateTicketPage() {
         onSubmit={handleSubmit}
         className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-6 space-y-4"
       >
+        <div>
+          <label className="text-sm text-slate-600 dark:text-slate-300">Tiket ditujukan ke</label>
+          <select
+            required
+            value={departmentId}
+            onChange={(e) => setDepartmentId(e.target.value)}
+            className="w-full mt-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+          >
+            <option value="">Pilih department...</option>
+            {departments.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
         <div>
           <label className="text-sm text-slate-600 dark:text-slate-300">Judul</label>
           <input
@@ -108,7 +159,7 @@ export function CreateTicketPage() {
           </select>
         </div>
 
-        {isStaff && (
+        {isStaff && departmentId && (
           <div className="border border-dashed border-slate-300 dark:border-slate-600 rounded-md p-3 space-y-3 bg-slate-50/50 dark:bg-slate-700/30">
             <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
               Opsi staff — buat ticket atas nama user lain / kerjaan yang udah selesai duluan
@@ -153,7 +204,8 @@ export function CreateTicketPage() {
           <select
             value={categoryId}
             onChange={(e) => setCategoryId(e.target.value)}
-            className="w-full mt-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+            disabled={!departmentId}
+            className="w-full mt-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 disabled:opacity-50"
           >
             <option value="">Tanpa kategori</option>
             {categories.map((c) => (
