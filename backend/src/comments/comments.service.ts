@@ -7,7 +7,8 @@ import { NotificationsService } from '../notifications/notifications.service';
 interface AuthUser {
   userId: string;
   email: string;
-  role: 'ADMIN' | 'AGENT' | 'CUSTOMER';
+  role: 'SUPER_ADMIN' | 'ADMIN' | 'AGENT' | 'CUSTOMER';
+  departmentId?: string | null;
 }
 
 @Injectable()
@@ -18,6 +19,19 @@ export class CommentsService {
     private notificationsService: NotificationsService,
   ) {}
 
+  private assertAccess(ticket: { departmentId: string | null; requesterId: string }, user: AuthUser) {
+    if (user.role === 'CUSTOMER') {
+      if (ticket.requesterId !== user.userId) {
+        throw new ForbiddenException('Kamu tidak punya akses ke ticket ini');
+      }
+      return;
+    }
+    if (user.role === 'SUPER_ADMIN') return;
+    if (ticket.departmentId !== user.departmentId) {
+      throw new ForbiddenException('Ticket ini bukan dari department kamu');
+    }
+  }
+
   async create(ticketId: string, dto: CreateCommentDto, user: AuthUser) {
     const ticket = await this.prisma.ticket.findUnique({
       where: { id: ticketId },
@@ -25,32 +39,19 @@ export class CommentsService {
     });
     if (!ticket) throw new NotFoundException('Ticket tidak ditemukan');
 
-    if (user.role === 'CUSTOMER' && ticket.requesterId !== user.userId) {
-      throw new ForbiddenException('Kamu tidak punya akses ke ticket ini');
-    }
+    this.assertAccess(ticket, user);
 
-    // Customer tidak boleh bikin internal note
     const isInternal = user.role === 'CUSTOMER' ? false : !!dto.isInternal;
 
     const comment = await this.prisma.comment.create({
-      data: {
-        body: dto.body,
-        isInternal,
-        ticketId,
-        authorId: user.userId,
-      },
+      data: { body: dto.body, isInternal, ticketId, authorId: user.userId },
       include: { author: { select: { id: true, name: true, role: true } } },
     });
 
-    // Catat waktu respons pertama dari staff (buat SLA response time tracking)
     if (user.role !== 'CUSTOMER' && !ticket.firstRespondedAt) {
-      await this.prisma.ticket.update({
-        where: { id: ticketId },
-        data: { firstRespondedAt: new Date() },
-      });
+      await this.prisma.ticket.update({ where: { id: ticketId }, data: { firstRespondedAt: new Date() } });
     }
 
-    // Internal note tidak perlu notif ke customer
     if (!isInternal) {
       await this.notifyOtherParty(ticket, comment.author.name, dto.body, user);
     }
@@ -59,26 +60,31 @@ export class CommentsService {
   }
 
   private async notifyOtherParty(
-    ticket: { id: string; title: string; requesterId: string; requester: { id: string; email: string }; assignee: { id: string; email: string } | null },
+    ticket: {
+      id: string;
+      title: string;
+      requesterId: string;
+      departmentId: string | null;
+      requester: { id: string; email: string };
+      assignee: { id: string; email: string } | null;
+    },
     authorName: string,
     body: string,
     author: AuthUser,
   ) {
-    const recipients = new Map<string, string>(); // userId -> email
+    const recipients = new Map<string, string>();
 
     if (author.userId === ticket.requesterId) {
-      // Customer yang komen → notif ke assignee (kalau ada), atau semua agent/admin kalau belum di-assign
       if (ticket.assignee) {
         recipients.set(ticket.assignee.id, ticket.assignee.email);
       } else {
         const staff = await this.prisma.user.findMany({
-          where: { role: { in: ['AGENT', 'ADMIN'] } },
+          where: { role: { in: ['AGENT', 'ADMIN'] }, departmentId: ticket.departmentId },
           select: { id: true, email: true },
         });
         staff.forEach((s) => recipients.set(s.id, s.email));
       }
     } else {
-      // Agent/admin yang komen → notif ke requester
       recipients.set(ticket.requesterId, ticket.requester.email);
     }
 
@@ -98,11 +104,13 @@ export class CommentsService {
   }
 
   async findByTicket(ticketId: string, user: AuthUser) {
+    const ticket = await this.prisma.ticket.findUnique({ where: { id: ticketId } });
+    if (!ticket) throw new NotFoundException('Ticket tidak ditemukan');
+    this.assertAccess(ticket, user);
+
     const where: any = { ticketId };
-    // Customer tidak bisa lihat internal note
-    if (user.role === 'CUSTOMER') {
-      where.isInternal = false;
-    }
+    if (user.role === 'CUSTOMER') where.isInternal = false;
+
     return this.prisma.comment.findMany({
       where,
       include: { author: { select: { id: true, name: true, role: true } } },
