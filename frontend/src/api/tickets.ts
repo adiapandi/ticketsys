@@ -75,6 +75,8 @@ export const ticketsApi = {
   submitCsat: (id: string, data: { rating: number; comment?: string }) =>
     api.post(`/tickets/${id}/csat`, data),
   csatStats: () => api.get('/tickets/csat-stats'),
+  export: (params: Record<string, string>) =>
+    api.get('/tickets/export', { params, responseType: 'blob' }),
   stats: () =>
     api.get<{ open: number; inProgress: number; resolved: number; closed: number; total: number }>(
       '/tickets/stats',
