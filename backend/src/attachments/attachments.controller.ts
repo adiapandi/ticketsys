@@ -61,7 +61,7 @@ export class AttachmentDownloadController {
   }
 
   @Delete(':id')
-  @Roles('ADMIN', 'AGENT')
+  @Roles('SUPER_ADMIN', 'ADMIN', 'AGENT')
   remove(@Param('id') id: string) {
     return this.attachmentsService.remove(id);
   }
