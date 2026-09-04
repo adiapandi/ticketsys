@@ -10,7 +10,7 @@ export class AuditLogController {
   constructor(private auditLogService: AuditLogService) {}
 
   @Get()
-  @Roles('ADMIN', 'AGENT')
+  @Roles('SUPER_ADMIN', 'ADMIN', 'AGENT')
   findAll(@Query('ticketId') ticketId?: string) {
     return this.auditLogService.findAll(ticketId);
   }
