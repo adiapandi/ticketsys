@@ -10,6 +10,7 @@ import { CategoriesPage } from './pages/CategoriesPage';
 import { UsersPage } from './pages/UsersPage';
 import { CsatReportPage } from './pages/CsatReportPage';
 import { CannedResponsesPage } from './pages/CannedResponsesPage';
+import { DepartmentsPage } from './pages/DepartmentsPage';
 import { ProfilePage } from './pages/ProfilePage';
 
 
@@ -33,6 +34,7 @@ export default function App() {
         <Route path="/admin/users" element={<UsersPage />} />
         <Route path="/admin/csat" element={<CsatReportPage />} />
         <Route path="/admin/canned-responses" element={<CannedResponsesPage />} />
+        <Route path="/admin/departments" element={<DepartmentsPage />} />
         <Route path="/profile" element={<ProfilePage />} />
       </Route>
     </Routes>
