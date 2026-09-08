@@ -381,6 +381,18 @@ export class TicketsService {
       take: 5000, // batas wajar biar tidak membebani server untuk export raksasa
     });
 
+      const formatDate = (date: Date | null) => {
+      if (!date) return '';
+      return date.toLocaleString('id-ID', {
+        timeZone: 'Asia/Jakarta',
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    };
+
     const rows = tickets.map((t) => ({
       'Ticket ID': t.id,
       Judul: t.title,
@@ -392,9 +404,9 @@ export class TicketsService {
       Requester: t.requester.name,
       'Email Requester': t.requester.email,
       Assignee: t.assignee?.name || 'Belum di-assign',
-      'Dibuat Pada': t.createdAt.toISOString(),
-      'Update Terakhir': t.updatedAt.toISOString(),
-      'Ditutup Pada': t.closedAt ? t.closedAt.toISOString() : '',
+      'Dibuat Pada': formatDate(t.createdAt),
+      'Update Terakhir': formatDate(t.updatedAt),
+      'Ditutup Pada': formatDate(t.closedAt),
       'SLA Breached': t.slaBreached ? 'Ya' : 'Tidak',
       'Rating CSAT': t.csatRating ?? '',
     }));
