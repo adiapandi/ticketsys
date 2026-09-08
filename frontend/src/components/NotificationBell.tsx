@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell } from 'lucide-react';
 import { notificationsApi, AppNotification } from '../api/tickets';
+import { notificationPrefsApi } from '../api/notificationPreferences';
+import { playNotificationSound } from '../utils/notificationSound';
 
 function timeAgo(dateStr: string) {
   const diffMs = Date.now() - new Date(dateStr).getTime();
@@ -19,9 +21,16 @@ export function NotificationBell() {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  const soundEnabledRef = useRef(true);
+  const prevUnreadRef = useRef<number | null>(null);
 
   async function loadUnreadCount() {
     const { data } = await notificationsApi.unreadCount();
+    // Cuma bunyiin suara kalau count NAIK dibanding polling sebelumnya (bukan pas pertama kali load halaman)
+    if (prevUnreadRef.current !== null && data > prevUnreadRef.current && soundEnabledRef.current) {
+      playNotificationSound();
+    }
+    prevUnreadRef.current = data;
     setUnreadCount(data);
   }
 
@@ -31,6 +40,9 @@ export function NotificationBell() {
   }
 
   useEffect(() => {
+    notificationPrefsApi.get().then((res) => {
+      soundEnabledRef.current = res.data.soundEnabled;
+    });
     loadUnreadCount();
     const interval = setInterval(loadUnreadCount, 30000);
     return () => clearInterval(interval);
