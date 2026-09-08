@@ -42,4 +42,8 @@ export class QueryTicketDto {
   @IsOptional()
   @IsString()
   order?: 'asc' | 'desc';
+
+  @IsOptional()
+  @IsString()
+  format?: 'csv' | 'xlsx';
 }
