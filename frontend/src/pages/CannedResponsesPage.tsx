@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 
 export function CannedResponsesPage() {
   const { user } = useAuth();
-  const isStaff = user?.role === 'ADMIN' || user?.role === 'AGENT';
+  const isStaff = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN' || user?.role === 'AGENT';
 
   const [items, setItems] = useState<CannedResponse[]>([]);
   const [loading, setLoading] = useState(true);
