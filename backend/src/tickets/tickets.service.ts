@@ -383,13 +383,15 @@ export class TicketsService {
 
       const formatDate = (date: Date | null) => {
       if (!date) return '';
-      return date.toLocaleString('id-ID', {
+      return date.toLocaleString('en-GB', {
         timeZone: 'Asia/Jakarta',
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
         hour: '2-digit',
         minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
       });
     };
 
