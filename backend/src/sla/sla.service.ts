@@ -27,16 +27,10 @@ export class SlaService {
     };
   }
 
-  // Dipanggil saat priority ticket berubah manual, supaya due date ikut menyesuaikan
   recomputeDueDates(priority: TicketPriority, createdAt: Date) {
     return this.computeDueDates(priority, createdAt);
   }
 
-  /**
-   * Cron job: cek tiap 15 menit apakah ada ticket yang lewat resolutionDueAt tapi belum
-   * resolved/closed. Kalau ada dan belum ditandai breach, tandai + naikkan priority satu
-   * level (auto-escalate) + kirim notifikasi ke assignee (atau semua staff kalau belum di-assign).
-   */
   @Cron('0 */15 * * * *')
   async checkOverdueTickets() {
     const now = new Date();
@@ -64,28 +58,26 @@ export class SlaService {
 
       await this.prisma.ticket.update({
         where: { id: ticket.id },
-        data: {
-          slaBreached: true,
-          escalated: canEscalate,
-          priority: newPriority,
-        },
+        data: { slaBreached: true, escalated: canEscalate, priority: newPriority },
       });
 
       const recipients = ticket.assignee
         ? [ticket.assignee]
-        : await this.prisma.user.findMany({ where: { role: { in: ['AGENT', 'ADMIN'] } } });
+        : await this.prisma.user.findMany({
+            where: { role: { in: ['AGENT', 'ADMIN'] }, departmentId: ticket.departmentId },
+          });
 
       const message = canEscalate
         ? `Ticket "${ticket.title}" melewati SLA dan di-escalate ke priority ${newPriority}`
         : `Ticket "${ticket.title}" melewati SLA resolusi`;
 
       await Promise.all(
-        recipients.map((r) =>
-          Promise.all([
-            this.notificationsService.create(r.id, 'SLA_BREACHED', message, ticket.id),
-            this.mailService.sendStatusChanged(r.email, ticket.title, ticket.id, `SLA BREACHED (${newPriority})`),
-          ]),
-        ),
+        recipients.map(async (r) => {
+          await this.notificationsService.create(r.id, 'SLA_BREACHED', message, ticket.id);
+          if (await this.notificationsService.canSendEmail(r.id, 'notifySlaBreached')) {
+            await this.mailService.sendStatusChanged(r.email, ticket.title, ticket.id, `SLA BREACHED (${newPriority})`);
+          }
+        }),
       );
     }
   }
