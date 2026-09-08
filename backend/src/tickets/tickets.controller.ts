@@ -51,10 +51,10 @@ export class TicketsController {
   @Roles('SUPER_ADMIN', 'ADMIN', 'AGENT')
   async exportTickets(
     @Query() query: QueryTicketDto,
-    @Query('format') format: 'csv' | 'xlsx' = 'xlsx',
     @CurrentUser() user: any,
     @Res() res: Response,
   ) {
+    const format = query.format || 'xlsx';
     const buffer = await this.ticketsService.exportTickets(query, format, user);
     const mimetype =
       format === 'csv'
