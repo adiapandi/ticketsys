@@ -89,17 +89,17 @@ export class CommentsService {
     }
 
     await Promise.all(
-      Array.from(recipients.entries()).map(([userId, email]) =>
-        Promise.all([
-          this.notificationsService.create(
-            userId,
-            'NEW_COMMENT',
-            `${authorName} membalas ticket "${ticket.title}"`,
-            ticket.id,
-          ),
-          this.mailService.sendNewComment(email, ticket.title, ticket.id, authorName, body),
-        ]),
-      ),
+      Array.from(recipients.entries()).map(async ([userId, email]) => {
+        await this.notificationsService.create(
+          userId,
+          'NEW_COMMENT',
+          `${authorName} membalas ticket "${ticket.title}"`,
+          ticket.id,
+        );
+        if (await this.notificationsService.canSendEmail(userId, 'notifyNewComment')) {
+          await this.mailService.sendNewComment(email, ticket.title, ticket.id, authorName, body);
+        }
+      }),
     );
   }
 
