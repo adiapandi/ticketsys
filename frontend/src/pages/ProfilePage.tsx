@@ -1,7 +1,9 @@
-import { useState, FormEvent, useRef } from 'react';
+import { useState, FormEvent, useRef, useEffect } from 'react';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { Avatar } from '../components/Avatar';
+import { notificationPrefsApi, NotificationPrefs } from '../api/notificationPreferences';
+import { playNotificationSound } from '../utils/notificationSound';
 
 export function ProfilePage() {
   const { user, updateUser } = useAuth();
@@ -23,6 +25,31 @@ export function ProfilePage() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [avatarError, setAvatarError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [prefs, setPrefs] = useState<NotificationPrefs | null>(null);
+  const [savingPrefs, setSavingPrefs] = useState(false);
+  const [prefsSuccess, setPrefsSuccess] = useState('');
+
+  useEffect(() => {
+    notificationPrefsApi.get().then((res) => setPrefs(res.data));
+  }, []);
+
+  async function handlePrefChange(key: keyof NotificationPrefs, value: boolean) {
+    if (!prefs) return;
+    const updated = { ...prefs, [key]: value };
+    setPrefs(updated);
+    setSavingPrefs(true);
+    setPrefsSuccess('');
+    try {
+      await notificationPrefsApi.update({ [key]: value });
+      setPrefsSuccess('Tersimpan');
+      if (key === 'soundEnabled' && value) {
+        playNotificationSound(); // preview supaya user tau bunyinya kayak apa
+      }
+      setTimeout(() => setPrefsSuccess(''), 1500);
+    } finally {
+      setSavingPrefs(false);
+    }
+  }
 
   async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -112,6 +139,117 @@ export function ProfilePage() {
           </div>
         </div>
       </div>
+
+        {prefs && (
+        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-5">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200">Pengaturan Notifikasi</h2>
+            {prefsSuccess && <span className="text-xs text-green-600 dark:text-green-400">{prefsSuccess}</span>}
+          </div>
+
+          <div className="space-y-3">
+            <label className="flex items-center justify-between cursor-pointer">
+              <div>
+                <p className="text-sm text-slate-700 dark:text-slate-200">Notifikasi Email</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500">Matikan untuk berhenti terima email dari sistem</p>
+              </div>
+              <input
+                type="checkbox"
+                checked={prefs.emailEnabled}
+                onChange={(e) => handlePrefChange('emailEnabled', e.target.checked)}
+                disabled={savingPrefs}
+                className="rounded border-slate-300 dark:border-slate-600"
+              />
+            </label>
+
+            <label className="flex items-center justify-between cursor-pointer">
+              <div>
+                <p className="text-sm text-slate-700 dark:text-slate-200">Nada Dering</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500">Bunyikan suara saat ada notifikasi baru</p>
+              </div>
+              <input
+                type="checkbox"
+                checked={prefs.soundEnabled}
+                onChange={(e) => handlePrefChange('soundEnabled', e.target.checked)}
+                disabled={savingPrefs}
+                className="rounded border-slate-300 dark:border-slate-600"
+              />
+            </label>
+
+            <div className="border-t border-slate-100 dark:border-slate-700 pt-3 space-y-2">
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Jenis notifikasi yang diterima:</p>
+
+              {user?.role === 'CUSTOMER' ? (
+                <>
+                  <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={prefs.notifyStatusChanged}
+                      onChange={(e) => handlePrefChange('notifyStatusChanged', e.target.checked)}
+                      disabled={savingPrefs}
+                      className="rounded border-slate-300 dark:border-slate-600"
+                    />
+                    Status ticket saya berubah
+                  </label>
+                  <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={prefs.notifyNewComment}
+                      onChange={(e) => handlePrefChange('notifyNewComment', e.target.checked)}
+                      disabled={savingPrefs}
+                      className="rounded border-slate-300 dark:border-slate-600"
+                    />
+                    Ada balasan baru di ticket saya
+                  </label>
+                </>
+              ) : (
+                <>
+                  <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={prefs.notifyTicketCreated}
+                      onChange={(e) => handlePrefChange('notifyTicketCreated', e.target.checked)}
+                      disabled={savingPrefs}
+                      className="rounded border-slate-300 dark:border-slate-600"
+                    />
+                    Ada ticket baru di department saya
+                  </label>
+                  <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={prefs.notifyTicketAssigned}
+                      onChange={(e) => handlePrefChange('notifyTicketAssigned', e.target.checked)}
+                      disabled={savingPrefs}
+                      className="rounded border-slate-300 dark:border-slate-600"
+                    />
+                    Saya di-assign ke ticket
+                  </label>
+                  <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={prefs.notifyNewComment}
+                      onChange={(e) => handlePrefChange('notifyNewComment', e.target.checked)}
+                      disabled={savingPrefs}
+                      className="rounded border-slate-300 dark:border-slate-600"
+                    />
+                    Ada balasan baru di ticket yang saya tangani
+                  </label>
+                  <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={prefs.notifySlaBreached}
+                      onChange={(e) => handlePrefChange('notifySlaBreached', e.target.checked)}
+                      disabled={savingPrefs}
+                      className="rounded border-slate-300 dark:border-slate-600"
+                    />
+                    Ticket melewati batas SLA
+                  </label>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-5">
         <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Informasi Akun</h2>
