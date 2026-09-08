@@ -65,7 +65,6 @@ export class TicketsService {
       ticket.id,
     );
 
-    // Notif ke staff department terkait saja (bukan semua staff global)
     const staff = await this.prisma.user.findMany({
       where: {
         role: { in: ['AGENT', 'ADMIN'] },
@@ -75,31 +74,31 @@ export class TicketsService {
       select: { id: true, email: true },
     });
     await Promise.all(
-      staff.map((s) =>
-        Promise.all([
-          this.notificationsService.create(
-            s.id,
-            'TICKET_CREATED',
-            `Ticket baru: "${ticket.title}" oleh ${ticket.requester.name}`,
-            ticket.id,
-          ),
-          this.mailService.sendTicketCreated(s.email, ticket.title, ticket.id, ticket.requester.name),
-        ]),
-      ),
+      staff.map(async (s) => {
+        await this.notificationsService.create(
+          s.id,
+          'TICKET_CREATED',
+          `Ticket baru: "${ticket.title}" oleh ${ticket.requester.name}`,
+          ticket.id,
+        );
+        if (await this.notificationsService.canSendEmail(s.id, 'notifyTicketCreated')) {
+          await this.mailService.sendTicketCreated(s.email, ticket.title, ticket.id, ticket.requester.name);
+        }
+      }),
     );
 
     if (assigneeId) {
       const assignee = await this.prisma.user.findUnique({ where: { id: assigneeId } });
       if (assignee) {
-        await Promise.all([
-          this.notificationsService.create(
-            assignee.id,
-            'TICKET_ASSIGNED',
-            `Kamu di-assign ke ticket "${ticket.title}"`,
-            ticket.id,
-          ),
-          this.mailService.sendTicketAssigned(assignee.email, ticket.title, ticket.id),
-        ]);
+        await this.notificationsService.create(
+          assignee.id,
+          'TICKET_ASSIGNED',
+          `Kamu di-assign ke ticket "${ticket.title}"`,
+          ticket.id,
+        );
+        if (await this.notificationsService.canSendEmail(assignee.id, 'notifyTicketAssigned')) {
+          await this.mailService.sendTicketAssigned(assignee.email, ticket.title, ticket.id);
+        }
         await this.auditLogService.log(
           'ASSIGNED',
           `Ticket di-assign ke ${assignee.name} (saat dibuat)`,
@@ -120,7 +119,6 @@ export class TicketsService {
     } else if (user.role === 'SUPER_ADMIN') {
       if (query.departmentId) where.departmentId = query.departmentId;
     } else {
-      // ADMIN/AGENT department-scoped: paksa filter ke department sendiri, abaikan query dari luar
       where.departmentId = user.departmentId;
     }
 
@@ -252,21 +250,21 @@ export class TicketsService {
     });
 
     if (dto.status && dto.status !== ticket.status) {
-      await Promise.all([
-        this.notificationsService.create(
-          ticket.requesterId,
-          'TICKET_STATUS_CHANGED',
-          `Status ticket "${ticket.title}" berubah menjadi ${dto.status.replace('_', ' ')}`,
-          ticket.id,
-        ),
-        this.mailService.sendStatusChanged(ticket.requester.email, ticket.title, ticket.id, dto.status),
-        this.auditLogService.log(
-          'STATUS_CHANGED',
-          `Status diubah dari ${ticket.status.replace('_', ' ')} menjadi ${dto.status.replace('_', ' ')}`,
-          user.userId,
-          ticket.id,
-        ),
-      ]);
+      await this.notificationsService.create(
+        ticket.requesterId,
+        'TICKET_STATUS_CHANGED',
+        `Status ticket "${ticket.title}" berubah menjadi ${dto.status.replace('_', ' ')}`,
+        ticket.id,
+      );
+      if (await this.notificationsService.canSendEmail(ticket.requesterId, 'notifyStatusChanged')) {
+        await this.mailService.sendStatusChanged(ticket.requester.email, ticket.title, ticket.id, dto.status);
+      }
+      await this.auditLogService.log(
+        'STATUS_CHANGED',
+        `Status diubah dari ${ticket.status.replace('_', ' ')} menjadi ${dto.status.replace('_', ' ')}`,
+        user.userId,
+        ticket.id,
+      );
     }
 
     if (dto.priority && dto.priority !== ticket.priority) {
@@ -281,16 +279,16 @@ export class TicketsService {
     if (dto.assigneeId && dto.assigneeId !== ticket.assigneeId) {
       const newAssignee = await this.prisma.user.findUnique({ where: { id: dto.assigneeId } });
       if (newAssignee) {
-        await Promise.all([
-          this.notificationsService.create(
-            newAssignee.id,
-            'TICKET_ASSIGNED',
-            `Kamu di-assign ke ticket "${ticket.title}"`,
-            ticket.id,
-          ),
-          this.mailService.sendTicketAssigned(newAssignee.email, ticket.title, ticket.id),
-          this.auditLogService.log('ASSIGNED', `Ticket di-assign ke ${newAssignee.name}`, user.userId, ticket.id),
-        ]);
+        await this.notificationsService.create(
+          newAssignee.id,
+          'TICKET_ASSIGNED',
+          `Kamu di-assign ke ticket "${ticket.title}"`,
+          ticket.id,
+        );
+        if (await this.notificationsService.canSendEmail(newAssignee.id, 'notifyTicketAssigned')) {
+          await this.mailService.sendTicketAssigned(newAssignee.email, ticket.title, ticket.id);
+        }
+        await this.auditLogService.log('ASSIGNED', `Ticket di-assign ke ${newAssignee.name}`, user.userId, ticket.id);
       }
     }
 
@@ -348,6 +346,35 @@ export class TicketsService {
     return updated;
   }
 
+  async getCsatStats(user: AuthUser) {
+    const where: any =
+      user.role === 'SUPER_ADMIN'
+        ? { csatRating: { not: null } }
+        : { csatRating: { not: null }, departmentId: user.departmentId };
+
+    const rated = await this.prisma.ticket.findMany({
+      where,
+      select: {
+        id: true,
+        title: true,
+        csatRating: true,
+        csatComment: true,
+        csatSubmittedAt: true,
+        requester: { select: { name: true } },
+      },
+      orderBy: { csatSubmittedAt: 'desc' },
+    });
+
+    const total = rated.length;
+    const average = total > 0 ? rated.reduce((sum, t) => sum + (t.csatRating || 0), 0) / total : 0;
+    const distribution = [1, 2, 3, 4, 5].map((star) => ({
+      star,
+      count: rated.filter((t) => t.csatRating === star).length,
+    }));
+
+    return { total, average: Math.round(average * 10) / 10, distribution, recent: rated.slice(0, 20) };
+  }
+
   async exportTickets(query: QueryTicketDto, format: 'csv' | 'xlsx', user: AuthUser): Promise<Buffer> {
     const where: any = {};
 
@@ -378,10 +405,10 @@ export class TicketsService {
         department: { select: { name: true } },
       },
       orderBy: { createdAt: 'desc' },
-      take: 5000, // batas wajar biar tidak membebani server untuk export raksasa
+      take: 5000,
     });
 
-      const formatDate = (date: Date | null) => {
+    const formatDate = (date: Date | null) => {
       if (!date) return '';
       return date.toLocaleString('en-GB', {
         timeZone: 'Asia/Jakarta',
@@ -419,32 +446,5 @@ export class TicketsService {
 
     const bookType = format === 'csv' ? 'csv' : 'xlsx';
     return XLSX.write(workbook, { type: 'buffer', bookType });
-  }
-
-  async getCsatStats(user: AuthUser) {
-    const where: any =
-      user.role === 'SUPER_ADMIN' ? { csatRating: { not: null } } : { csatRating: { not: null }, departmentId: user.departmentId };
-
-    const rated = await this.prisma.ticket.findMany({
-      where,
-      select: {
-        id: true,
-        title: true,
-        csatRating: true,
-        csatComment: true,
-        csatSubmittedAt: true,
-        requester: { select: { name: true } },
-      },
-      orderBy: { csatSubmittedAt: 'desc' },
-    });
-
-    const total = rated.length;
-    const average = total > 0 ? rated.reduce((sum, t) => sum + (t.csatRating || 0), 0) / total : 0;
-    const distribution = [1, 2, 3, 4, 5].map((star) => ({
-      star,
-      count: rated.filter((t) => t.csatRating === star).length,
-    }));
-
-    return { total, average: Math.round(average * 10) / 10, distribution, recent: rated.slice(0, 20) };
   }
 }
