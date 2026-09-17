@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ticketsApi, Ticket } from '../api/tickets';
 import { departmentsApi, Department } from '../api/departments';
+import { tagsApi, Tag } from '../api/tags';
 import { Download } from 'lucide-react';
 import { StatusBadge, PriorityBadge, SlaBadge } from '../components/Badges';
 import { useAuth } from '../context/AuthContext';
@@ -22,6 +23,8 @@ export function TicketListPage() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [departmentFilter, setDepartmentFilter] = useState('');
+  const [tagFilter, setTagFilter] = useState('');
+  const [allTags, setAllTags] = useState<Tag[]>([]);
   const [exporting, setExporting] = useState(false);
 
   async function handleExport(format: 'csv' | 'xlsx') {
@@ -70,6 +73,7 @@ export function TicketListPage() {
     if (priority) params.priority = priority;
     if (search) params.search = search;
     if (departmentFilter) params.departmentId = departmentFilter;
+    if (tagFilter) params.tagId = tagFilter;
     const { data } = await ticketsApi.list(params);
     setTickets(data.data);
     setTotal(data.total);
@@ -81,13 +85,14 @@ export function TicketListPage() {
     if (user?.role === 'SUPER_ADMIN') {
       departmentsApi.list().then((res) => setDepartments(res.data));
     }
+    tagsApi.list().then((res) => setAllTags(res.data));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, priority, page, sortIndex, departmentFilter]);
+  }, [status, priority, page, sortIndex, departmentFilter, tagFilter]);
 
   function handleSearchSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -191,6 +196,26 @@ export function TicketListPage() {
             </select>
           </div>
         )}
+        {allTags.length > 0 && (
+          <div>
+            <label className="text-xs text-slate-500 dark:text-slate-400">Tag</label>
+            <select
+              value={tagFilter}
+              onChange={(e) => {
+                setTagFilter(e.target.value);
+                setPage(1);
+              }}
+              className="block mt-1 px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+            >
+              <option value="">Semua Tag</option>
+              {allTags.map((t) => (
+                <option key={t.id} value={t.id}>
+                  #{t.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
         <div>
           <label className="text-xs text-slate-500 dark:text-slate-400">Urutkan</label>
           <select
@@ -222,11 +247,23 @@ export function TicketListPage() {
             className="flex items-center justify-between px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50"
           >
             <div>
-              <p className="text-sm font-medium text-slate-800 dark:text-slate-100">{t.title}</p>
+             <p className="text-sm font-medium text-slate-800 dark:text-slate-100">{t.title}</p>
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 {t.requester.name} · {t.category?.name || 'Tanpa kategori'} ·{' '}
                 {t.assignee ? `Ditangani oleh ${t.assignee.name}` : 'Belum di-assign'}
               </p>
+              {t.tags && t.tags.length > 0 && (
+                <div className="flex gap-1 mt-1">
+                  {t.tags.map((tag) => (
+                    <span
+                      key={tag.id}
+                      className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400"
+                    >
+                      #{tag.name}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <SlaBadge isOverdue={t.isOverdue} resolutionDueAt={t.resolutionDueAt} />
