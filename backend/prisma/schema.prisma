@@ -198,3 +198,12 @@ model Department {
 
   @@map("departments")
 }
+
+model Tag {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  tickets   Ticket[]
+
+  @@map("tags")
+}
