@@ -97,6 +97,7 @@ model Ticket {
 
   comments    Comment[]
   attachments Attachment[]
+  tags        Tag[]
 
   @@map("tickets")
 }
