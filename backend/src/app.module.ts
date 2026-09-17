@@ -14,6 +14,7 @@ import { CategoriesModule } from './categories/categories.module';
 import { AuditLogModule } from './audit-log/audit-log.module';
 import { CannedResponsesModule } from './canned-responses/canned-responses.module';
 import { DepartmentsModule } from './departments/departments.module';
+import { TagsModule } from './tags/tags.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { DepartmentsModule } from './departments/departments.module';
     CategoriesModule,
     CannedResponsesModule,
     DepartmentsModule,
+    TagsModule,
   ],
 })
 export class AppModule {}
