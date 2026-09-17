@@ -20,6 +20,7 @@ export interface Ticket {
   assignee?: { id: string; name: string; email: string } | null;
   category?: { id: string; name: string } | null;
   department?: { id: string; name: string } | null;
+  tags?: { id: string; name: string }[];
   _count?: { comments: number };
 }
 
@@ -77,6 +78,8 @@ export const ticketsApi = {
   csatStats: () => api.get('/tickets/csat-stats'),
   export: (params: Record<string, string>) =>
     api.get('/tickets/export', { params, responseType: 'blob' }),
+  addTag: (ticketId: string, name: string) => api.post(`/tickets/${ticketId}/tags`, { name }),
+  removeTag: (ticketId: string, tagId: string) => api.delete(`/tickets/${ticketId}/tags/${tagId}`),
   stats: () =>
     api.get<{ open: number; inProgress: number; resolved: number; closed: number; total: number }>(
       '/tickets/stats',
