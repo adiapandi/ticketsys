@@ -9,6 +9,7 @@ import { MailService } from '../mail/mail.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { SlaService } from '../sla/sla.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
+import { TagsService } from '../tags/tags.service';
 import * as XLSX from 'xlsx';
 
 interface AuthUser {
@@ -26,6 +27,7 @@ export class TicketsService {
     private notificationsService: NotificationsService,
     private slaService: SlaService,
     private auditLogService: AuditLogService,
+    private tagsService: TagsService,
   ) {}
 
   private isDeptScopedStaff(role: string): role is 'ADMIN' | 'AGENT' {
@@ -131,6 +133,9 @@ export class TicketsService {
         { description: { contains: query.search, mode: 'insensitive' } },
       ];
     }
+    if (query.tagId) {
+      where.tags = { some: { id: query.tagId } };
+    }
 
     const page = query.page && query.page > 0 ? query.page : 1;
     const limit = query.limit && query.limit > 0 ? query.limit : 20;
@@ -148,6 +153,7 @@ export class TicketsService {
           assignee: { select: { id: true, name: true, email: true } },
           category: true,
           department: { select: { id: true, name: true } },
+          tags: true,
           _count: { select: { comments: true } },
         },
         orderBy: { [sortBy]: order },
@@ -187,6 +193,7 @@ export class TicketsService {
         assignee: { select: { id: true, name: true, email: true } },
         category: true,
         department: { select: { id: true, name: true } },
+        tags: true,
         comments: {
           include: { author: { select: { id: true, name: true, role: true } } },
           orderBy: { createdAt: 'asc' },
@@ -302,6 +309,50 @@ export class TicketsService {
       throw new ForbiddenException('Ticket ini bukan dari department kamu');
     }
     return this.prisma.ticket.delete({ where: { id } });
+  }
+
+  async addTag(ticketId: string, tagName: string, user: AuthUser) {
+    const ticket = await this.prisma.ticket.findUnique({ where: { id: ticketId } });
+    if (!ticket) throw new NotFoundException('Ticket tidak ditemukan');
+    if (user.role === 'CUSTOMER') {
+      throw new ForbiddenException('Customer tidak bisa menambah tag');
+    }
+    if (user.role !== 'SUPER_ADMIN' && ticket.departmentId !== user.departmentId) {
+      throw new ForbiddenException('Ticket ini bukan dari department kamu');
+    }
+
+    const tag = await this.tagsService.findOrCreate(tagName);
+
+    const updated = await this.prisma.ticket.update({
+      where: { id: ticketId },
+      data: { tags: { connect: { id: tag.id } } },
+      include: { tags: true },
+    });
+
+    await this.auditLogService.log('TAG_ADDED', `Tag "${tag.name}" ditambahkan`, user.userId, ticketId);
+
+    return updated.tags;
+  }
+
+  async removeTag(ticketId: string, tagId: string, user: AuthUser) {
+    const ticket = await this.prisma.ticket.findUnique({ where: { id: ticketId } });
+    if (!ticket) throw new NotFoundException('Ticket tidak ditemukan');
+    if (user.role === 'CUSTOMER') {
+      throw new ForbiddenException('Customer tidak bisa menghapus tag');
+    }
+    if (user.role !== 'SUPER_ADMIN' && ticket.departmentId !== user.departmentId) {
+      throw new ForbiddenException('Ticket ini bukan dari department kamu');
+    }
+
+    const updated = await this.prisma.ticket.update({
+      where: { id: ticketId },
+      data: { tags: { disconnect: { id: tagId } } },
+      include: { tags: true },
+    });
+
+    await this.auditLogService.log('TAG_REMOVED', `Tag dihapus`, user.userId, ticketId);
+
+    return updated.tags;
   }
 
   async getStats(user: AuthUser) {
