@@ -46,4 +46,8 @@ export class QueryTicketDto {
   @IsOptional()
   @IsString()
   format?: 'csv' | 'xlsx';
+
+  @IsOptional()
+  @IsString()
+  tagId?: string;
 }
