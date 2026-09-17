@@ -16,6 +16,7 @@ import { CreateTicketDto } from './dto/create-ticket.dto';
 import { UpdateTicketDto } from './dto/update-ticket.dto';
 import { QueryTicketDto } from './dto/query-ticket.dto';
 import { SubmitCsatDto } from './dto/submit-csat.dto';
+import { AddTagDto } from '../tags/dto/add-tag.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -45,6 +46,16 @@ export class TicketsController {
   @Roles('SUPER_ADMIN', 'ADMIN', 'AGENT')
   getCsatStats(@CurrentUser() user: any) {
     return this.ticketsService.getCsatStats(user);
+  }
+
+  @Post(':id/tags')
+  addTag(@Param('id') id: string, @Body() dto: AddTagDto, @CurrentUser() user: any) {
+    return this.ticketsService.addTag(id, dto.name, user);
+  }
+
+  @Delete(':id/tags/:tagId')
+  removeTag(@Param('id') id: string, @Param('tagId') tagId: string, @CurrentUser() user: any) {
+    return this.ticketsService.removeTag(id, tagId, user);
   }
 
   @Get('export')
