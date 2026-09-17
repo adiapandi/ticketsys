@@ -5,6 +5,7 @@ import { StatusBadge, PriorityBadge, SlaBadge } from '../components/Badges';
 import { AttachmentSection } from '../components/AttachmentSection';
 import { AuditLogList } from '../components/AuditLogList';
 import { CsatRating } from '../components/CsatRating';
+import { TagEditor } from '../components/TagEditor';
 import { cannedResponsesApi, CannedResponse } from '../api/cannedResponses';
 import { useAuth } from '../context/AuthContext';
 
@@ -91,6 +92,25 @@ export function TicketDetailPage() {
             {ticket.department && ` · ${ticket.department.name}`}
           </p>
           <p className="text-sm text-slate-700 dark:text-slate-200 mt-4 whitespace-pre-wrap">{ticket.description}</p>
+
+          <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+            {isStaff ? (
+              <TagEditor ticketId={ticket.id} tags={ticket.tags || []} onChange={load} />
+            ) : (
+              (ticket.tags?.length || 0) > 0 && (
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {ticket.tags!.map((tag) => (
+                    <span
+                      key={tag.id}
+                      className="text-xs px-2 py-0.5 rounded-full font-medium bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400"
+                    >
+                      #{tag.name}
+                    </span>
+                  ))}
+                </div>
+              )
+            )}
+          </div>
         </div>
 
         <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg">
