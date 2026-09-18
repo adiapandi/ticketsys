@@ -8,6 +8,7 @@ export interface NotificationPrefs {
   notifyStatusChanged: boolean;
   notifyNewComment: boolean;
   notifySlaBreached: boolean;
+  notifyMentioned: boolean;
 }
 
 export const notificationPrefsApi = {
