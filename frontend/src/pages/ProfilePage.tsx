@@ -346,6 +346,21 @@ function NotificationsSection() {
 
         <label className="flex items-center justify-between cursor-pointer">
           <div>
+            <p className="text-sm text-slate-700 dark:text-slate-200">Disebut (@mention)</p>
+            <p className="text-xs text-slate-400 dark:text-slate-500">Notif saat namamu disebut di komentar ticket</p>
+          </div>
+          <input
+            type="checkbox"
+            checked={prefs.notifyMentioned}
+            onChange={(e) => handlePrefChange('notifyMentioned', e.target.checked)}
+            disabled={savingPrefs}
+            className="rounded border-slate-300 dark:border-slate-600"
+          />
+        </label>
+
+
+        <label className="flex items-center justify-between cursor-pointer">
+          <div>
             <p className="text-sm text-slate-700 dark:text-slate-200">Nada Dering</p>
             <p className="text-xs text-slate-400 dark:text-slate-500">Bunyikan suara saat ada notifikasi baru</p>
           </div>
