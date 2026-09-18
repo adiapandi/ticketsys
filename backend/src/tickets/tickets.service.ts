@@ -194,6 +194,7 @@ export class TicketsService {
         category: true,
         department: { select: { id: true, name: true } },
         tags: true,
+        watchers: { select: { id: true, name: true, email: true } },
         comments: {
           include: { author: { select: { id: true, name: true, role: true } } },
           orderBy: { createdAt: 'asc' },
@@ -353,6 +354,65 @@ export class TicketsService {
     await this.auditLogService.log('TAG_REMOVED', `Tag dihapus`, user.userId, ticketId);
 
     return updated.tags;
+  }
+
+  async addWatcher(ticketId: string, watcherUserId: string, user: AuthUser) {
+    const ticket = await this.prisma.ticket.findUnique({ where: { id: ticketId } });
+    if (!ticket) throw new NotFoundException('Ticket tidak ditemukan');
+    if (user.role === 'CUSTOMER') {
+      throw new ForbiddenException('Customer tidak bisa menambah watcher');
+    }
+    if (user.role !== 'SUPER_ADMIN' && ticket.departmentId !== user.departmentId) {
+      throw new ForbiddenException('Ticket ini bukan dari department kamu');
+    }
+
+    const watcherUser = await this.prisma.user.findUnique({ where: { id: watcherUserId } });
+    if (!watcherUser) throw new NotFoundException('User tidak ditemukan');
+
+    await this.prisma.ticket.update({
+      where: { id: ticketId },
+      data: { watchers: { connect: { id: watcherUserId } } },
+    });
+
+    await this.notificationsService.create(
+      watcherUserId,
+      'WATCHER_ADDED',
+      `Kamu ditambahkan sebagai watcher ticket "${ticket.title}"`,
+      ticketId,
+    );
+    await this.auditLogService.log(
+      'WATCHER_ADDED',
+      `${watcherUser.name} ditambahkan sebagai watcher`,
+      user.userId,
+      ticketId,
+    );
+
+    return this.prisma.ticket.findUnique({
+      where: { id: ticketId },
+      include: { watchers: { select: { id: true, name: true, email: true } } },
+    });
+  }
+
+  async removeWatcher(ticketId: string, watcherUserId: string, user: AuthUser) {
+    const ticket = await this.prisma.ticket.findUnique({ where: { id: ticketId } });
+    if (!ticket) throw new NotFoundException('Ticket tidak ditemukan');
+    if (user.role === 'CUSTOMER') {
+      throw new ForbiddenException('Customer tidak bisa menghapus watcher');
+    }
+    if (user.role !== 'SUPER_ADMIN' && ticket.departmentId !== user.departmentId) {
+      throw new ForbiddenException('Ticket ini bukan dari department kamu');
+    }
+
+    await this.prisma.ticket.update({
+      where: { id: ticketId },
+      data: { watchers: { disconnect: { id: watcherUserId } } },
+    });
+    await this.auditLogService.log('WATCHER_REMOVED', `Watcher dihapus`, user.userId, ticketId);
+
+    return this.prisma.ticket.findUnique({
+      where: { id: ticketId },
+      include: { watchers: { select: { id: true, name: true, email: true } } },
+    });
   }
 
   async getStats(user: AuthUser) {
