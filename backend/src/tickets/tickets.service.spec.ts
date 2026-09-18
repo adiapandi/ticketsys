@@ -5,7 +5,7 @@ describe('TicketsService.isOverdue', () => {
 
   beforeEach(() => {
     // Dependency lain gak dipakai oleh isOverdue, aman di-mock kosong
-    service = new TicketsService({} as any, {} as any, {} as any, {} as any, {} as any);
+    service = new TicketsService({} as any, {} as any, {} as any, {} as any, {} as any, {} as any);
   });
 
   function callIsOverdue(ticket: any) {
