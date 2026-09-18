@@ -35,7 +35,7 @@ export class CommentsService {
   async create(ticketId: string, dto: CreateCommentDto, user: AuthUser) {
     const ticket = await this.prisma.ticket.findUnique({
       where: { id: ticketId },
-      include: { requester: true, assignee: true },
+      include: { requester: true, assignee: true, watchers: true },
     });
     if (!ticket) throw new NotFoundException('Ticket tidak ditemukan');
 
@@ -52,8 +52,32 @@ export class CommentsService {
       await this.prisma.ticket.update({ where: { id: ticketId }, data: { firstRespondedAt: new Date() } });
     }
 
+    // @mention: orang yang disebut otomatis jadi watcher + dapat notif MENTIONED
+    const mentionedIds = (dto.mentionedUserIds || []).filter((id) => id !== user.userId);
+    if (mentionedIds.length > 0) {
+      const mentionedUsers = await this.prisma.user.findMany({ where: { id: { in: mentionedIds } } });
+      for (const mu of mentionedUsers) {
+        const alreadyWatching = ticket.watchers.some((w) => w.id === mu.id);
+        if (!alreadyWatching) {
+          await this.prisma.ticket.update({
+            where: { id: ticketId },
+            data: { watchers: { connect: { id: mu.id } } },
+          });
+        }
+        await this.notificationsService.create(
+          mu.id,
+          'MENTIONED',
+          `${comment.author.name} menyebut kamu di ticket "${ticket.title}"`,
+          ticket.id,
+        );
+        if (await this.notificationsService.canSendEmail(mu.id, 'notifyMentioned')) {
+          await this.mailService.sendNewComment(mu.email, ticket.title, ticket.id, comment.author.name, dto.body);
+        }
+      }
+    }
+
     if (!isInternal) {
-      await this.notifyOtherParty(ticket, comment.author.name, dto.body, user);
+      await this.notifyOtherParty(ticket, comment.author.name, dto.body, user, mentionedIds);
     }
 
     return comment;
@@ -67,10 +91,12 @@ export class CommentsService {
       departmentId: string | null;
       requester: { id: string; email: string };
       assignee: { id: string; email: string } | null;
+      watchers: { id: string; email: string }[];
     },
     authorName: string,
     body: string,
     author: AuthUser,
+    alreadyNotifiedIds: string[] = [],
   ) {
     const recipients = new Map<string, string>();
 
@@ -87,6 +113,12 @@ export class CommentsService {
     } else {
       recipients.set(ticket.requesterId, ticket.requester.email);
     }
+
+    // Semua watcher juga dapat notif comment baru (kecuali penulis & yang barusan dapat notif mention)
+    ticket.watchers.forEach((w) => {
+      if (w.id !== author.userId) recipients.set(w.id, w.email);
+    });
+    alreadyNotifiedIds.forEach((id) => recipients.delete(id));
 
     await Promise.all(
       Array.from(recipients.entries()).map(async ([userId, email]) => {
