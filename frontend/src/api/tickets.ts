@@ -21,6 +21,7 @@ export interface Ticket {
   category?: { id: string; name: string } | null;
   department?: { id: string; name: string } | null;
   tags?: { id: string; name: string }[];
+  watchers?: { id: string; name: string; email: string }[];
   _count?: { comments: number };
 }
 
@@ -80,6 +81,8 @@ export const ticketsApi = {
     api.get('/tickets/export', { params, responseType: 'blob' }),
   addTag: (ticketId: string, name: string) => api.post(`/tickets/${ticketId}/tags`, { name }),
   removeTag: (ticketId: string, tagId: string) => api.delete(`/tickets/${ticketId}/tags/${tagId}`),
+  addWatcher: (ticketId: string, userId: string) => api.post(`/tickets/${ticketId}/watchers`, { userId }),
+  removeWatcher: (ticketId: string, userId: string) => api.delete(`/tickets/${ticketId}/watchers/${userId}`),
   stats: () =>
     api.get<{ open: number; inProgress: number; resolved: number; closed: number; total: number }>(
       '/tickets/stats',
@@ -88,7 +91,7 @@ export const ticketsApi = {
 
 export const commentsApi = {
   list: (ticketId: string) => api.get<Comment[]>(`/tickets/${ticketId}/comments`),
-  create: (ticketId: string, data: { body: string; isInternal?: boolean }) =>
+  create: (ticketId: string, data: { body: string; isInternal?: boolean; mentionedUserIds?: string[] }) =>
     api.post<Comment>(`/tickets/${ticketId}/comments`, data),
 };
 
