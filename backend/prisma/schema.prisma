@@ -45,6 +45,7 @@ model User {
 
   ticketsCreated  Ticket[]      @relation("TicketRequester")
   ticketsAssigned Ticket[]      @relation("TicketAssignee")
+  watchedTickets  Ticket[]      @relation("TicketWatchers")
   comments        Comment[]
   attachments     Attachment[]
   notifications   Notification[]
@@ -98,6 +99,7 @@ model Ticket {
   comments    Comment[]
   attachments Attachment[]
   tags        Tag[]
+  watchers    User[]       @relation("TicketWatchers")
 
   @@map("tickets")
 }
@@ -125,6 +127,8 @@ enum NotificationType {
   TICKET_STATUS_CHANGED
   NEW_COMMENT
   SLA_BREACHED
+  MENTIONED
+  WATCHER_ADDED
 }
 
 model Attachment {
