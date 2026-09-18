@@ -1,13 +1,11 @@
 # In-house Ticketing System
 
-Helpdesk ticketing system yang dibangun dari nol — awalnya project belajar, sekarang udah dipakai buat operasional IT support sehari-hari.
-
 ![CI](https://github.com/adiapandi/ticketsys/actions/workflows/ci.yml/badge.svg)
 
 ## Tech Stack
 
-- **Backend**: NestJS (TypeScript), Prisma ORM, PostgreSQL, JWT Auth, Nodemailer, node-cron (via `@nestjs/schedule`)
-- **Frontend**: React + Vite, TailwindCSS (dengan dark mode), React Router
+- **Backend**: NestJS (TypeScript), Prisma ORM, PostgreSQL, JWT Auth, Nodemailer, node-cron (via `@nestjs/schedule`), SheetJS (`xlsx`) untuk import/export
+- **Frontend**: React + Vite, TailwindCSS (dark mode), React Router, Lucide Icons
 - **Testing**: Jest (backend), Vitest (frontend)
 - **CI/CD**: GitHub Actions
 
@@ -18,56 +16,40 @@ Helpdesk ticketing system yang dibangun dari nol — awalnya project belajar, se
 - Comment thread per ticket, termasuk **internal note** yang cuma keliatan staff
 - Staff bisa bikin ticket **atas nama user lain** (untuk kerjaan yang udah selesai duluan, baru dicatat)
 - **File attachment** — upload ke ticket, download aman via JWT, validasi tipe & ukuran (maks 10MB)
-- Search, filter (status/priority), sorting, dan pagination di daftar ticket
+- **Tag/label** — bisa nambah banyak tag bebas per ticket (autocomplete dari tag yang sudah ada), berguna untuk penanda lintas kategori (misal `recurring`, `urgent-vip`)
+- Search, filter (status/priority/department/tag), sorting, dan pagination di daftar ticket
+- **Export ticket ke Excel/CSV** — ikut filter yang lagi aktif
 - Dashboard dengan statistik ticket yang bisa diklik buat filter langsung
 
+**Multi-Department**
+- Ticket ditujukan ke department tertentu (misal IT Support, IT Dev, HRGA) saat dibuat
+- **Kategori spesifik per department** — tiap department punya daftar kategori sendiri
+- Staff (Admin/Agent) **scoped ke 1 department**, cuma bisa kelola ticket & kategori department-nya sendiri
+- **Super Admin** — role di atas Admin, bisa lihat & kelola semua department
+
 **Auth & User Management**
-- Login dengan JWT — **tidak ada registrasi publik**, semua akun dibuat oleh admin
-- Role: **Customer** (bikin & lihat ticket sendiri), **Agent** (kelola semua ticket, assign, internal note), **Admin** (semua akses + kelola user & kategori)
-- Halaman profil: ubah nama/email/no. HP, upload foto profil, ganti password
-- Halaman admin: kelola user (buat, ubah role, hapus) dan kelola kategori
+- Login dengan JWT — **tidak ada registrasi publik**, semua akun dibuat oleh admin (satu-satu atau **bulk import via CSV/Excel**)
+- Role: **Customer**, **Agent** (scoped ke department), **Admin** (scoped ke department), **Super Admin** (semua department)
+- Halaman Settings dengan tab terpisah: **Profile** (foto, nama, email, no. HP), **Security** (ganti password), **Notifications** (preferensi notifikasi), **Appearance** (dark mode)
 
 **Notifikasi**
-- **Email notification** (via SMTP/Nodemailer) — ticket baru, ticket di-assign, status berubah, ada balasan baru
-- **In-app notification** — bell icon di navbar dengan unread count
+- **Email notification** (via SMTP/Nodemailer) — ticket baru, ticket di-assign, status berubah, ada balasan baru, SLA breach
+- **In-app notification** — bell icon dengan unread count, plus **nada dering** opsional saat ada notifikasi baru
+- **Preferensi notifikasi per user** — bisa matiin email secara keseluruhan (master switch) atau per jenis event, terpisah dari notifikasi in-app
 
 **SLA & Kualitas Layanan**
-- **SLA tracking** — target waktu respons & resolusi otomatis dihitung per priority. Cron job tiap 15 menit cek ticket yang lewat SLA, tandai breach, dan **auto-escalate** priority
-- **Audit log** — riwayat perubahan status/priority/assignee per ticket, siapa yang ubah dan kapan
+- **SLA tracking** — target waktu respons & resolusi otomatis dihitung berdasarkan priority. Cron job tiap 15 menit cek ticket yang lewat SLA, tandai breach, dan **auto-escalate** priority
+- **Audit log** — riwayat perubahan status/priority/assignee/tag per ticket, siapa yang ubah dan kapan
 - **CSAT (Customer Satisfaction Rating)** — user kasih rating bintang 1-5 + komentar setelah ticket resolved/closed, ada laporan rata-rata rating & distribusi untuk staff
 
 **Produktivitas Staff**
-- **Canned response** — template balasan yang bisa dipakai semua agent/admin saat membalas ticket
+- **Canned response** — template balasan yang bisa dipakai semua agent/admin lintas department saat membalas ticket
 
 **UI/UX**
-- Dark mode (toggle 🌙/☀️ di navbar, tersimpan di browser)
+- **Sidebar navigation** yang bisa di-collapse, dengan section terpisah untuk fitur staff (Management)
+- Dark mode (toggle di halaman Settings, tersimpan di browser)
+- Login page dengan ilustrasi custom, live clock, dan opsi "Ingat saya" (sesi tetap login atau hilang saat browser ditutup)
 
-## Struktur Project
-ticketing-system/
-├── .github/workflows/ # GitHub Actions CI
-├── backend/ # NestJS API
-│ ├── prisma/ # Schema & seed database
-│ ├── uploads/ # File attachment & avatar (auto-dibuat, gitignored)
-│ └── src/
-│ ├── auth/ # Login, ganti password, update profil, upload avatar
-│ ├── users/ # Kelola user (admin)
-│ ├── tickets/ # CRUD ticket, CSAT
-│ ├── comments/ # Comment & internal note
-│ ├── attachments/ # Upload & download file
-│ ├── categories/ # CRUD kategori (admin)
-│ ├── canned-responses/ # Template balasan
-│ ├── audit-log/ # Riwayat perubahan ticket
-│ ├── notifications/ # Notifikasi in-app
-│ ├── mail/ # Kirim email (Nodemailer)
-│ └── sla/ # SLA policy, cron auto-escalate
-├── frontend/ # React + Vite SPA
-│ └── src/
-│ ├── pages/
-│ ├── components/
-│ ├── context/ # Auth & Theme (dark mode)
-│ ├── api/
-│ └── utils/
-└── docker-compose.yml # PostgreSQL untuk development
 
 
 ## Cara Menjalankan (Development)
@@ -97,8 +79,6 @@ Backend jalan di `http://localhost:3000/api`.
 - Email: `[email protected]`
 - Password: `Admin123!`
 
-⚠️ Ganti password ini setelah login pertama kali. Karena tidak ada registrasi publik, akun baru **hanya bisa dibuat lewat halaman "Kelola User" oleh admin**.
-
 ### Setup Email (opsional untuk development)
 
 Default `SMTP_ENABLED=false` — email tidak benar-benar dikirim, hanya di-log ke console backend. Untuk aktifkan email sungguhan, isi `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` di `.env`. Untuk Gmail, aktifkan 2FA lalu generate [App Password](https://myaccount.google.com/apppasswords).
@@ -116,24 +96,24 @@ Frontend jalan di `http://localhost:5173`.
 
 ## Role & Permission
 
-| Aksi | Customer | Agent | Admin |
-|---|---|---|---|
-| Buat ticket | ✅ | ✅ | ✅ |
-| Lihat ticket sendiri | ✅ | ✅ | ✅ |
-| Lihat semua ticket | ❌ | ✅ | ✅ |
-| Update status/priority/assignee | ❌ | ✅ | ✅ |
-| Tulis internal note | ❌ | ✅ | ✅ |
-| Kelola template balasan | ❌ | ✅ | ✅ |
-| Lihat laporan CSAT | ❌ | ✅ | ✅ |
-| Lihat audit log ticket | ❌ | ✅ | ✅ |
-| Beri rating CSAT (di ticket sendiri) | ✅ | ❌ | ❌ |
-| Hapus ticket | ❌ | ❌ | ✅ |
-| Kelola user (buat/ubah role/hapus) | ❌ | ❌ | ✅ |
-| Kelola kategori | ❌ | ❌ | ✅ |
+| Aksi | Customer | Agent | Admin (dept) | Super Admin |
+|---|---|---|---|---|
+| Buat ticket | ✅ | ✅ | ✅ | ✅ |
+| Lihat ticket sendiri | ✅ | ✅ | ✅ | ✅ |
+| Lihat ticket department sendiri | ❌ | ✅ | ✅ | ✅ (semua dept) |
+| Update status/priority/assignee/tag | ❌ | ✅ | ✅ | ✅ |
+| Tulis internal note | ❌ | ✅ | ✅ | ✅ |
+| Kelola template balasan | ❌ | ✅ | ✅ | ✅ |
+| Lihat laporan CSAT | ❌ | ✅ (dept) | ✅ (dept) | ✅ (semua) |
+| Beri rating CSAT (di ticket sendiri) | ✅ | ❌ | ❌ | ❌ |
+| Kelola kategori | ❌ | ❌ | ✅ (dept sendiri) | ✅ (semua dept) |
+| Kelola user | ❌ | ❌ | ✅ (dept sendiri) | ✅ (semua) |
+| Kelola department | ❌ | ❌ | ❌ | ✅ |
+| Hapus ticket | ❌ | ❌ | ✅ (dept sendiri) | ✅ |
 
 ## SLA Policy
 
-Target waktu respons & resolusi per priority (bisa diubah di `backend/src/sla/sla.constants.ts`):
+Target waktu respons & resolusi per priority
 
 | Priority | Target Respons | Target Resolusi |
 |---|---|---|
@@ -142,21 +122,8 @@ Target waktu respons & resolusi per priority (bisa diubah di `backend/src/sla/sl
 | Medium | 8 jam | 3 hari |
 | Low | 24 jam | 7 hari |
 
-Cron job jalan tiap 15 menit, cek ticket yang melewati target resolusi dan belum resolved/closed → tandai breach, naikkan priority satu tingkat, kirim notifikasi ke assignee.
+Cron job jalan tiap 15 menit, cek ticket yang melewati target resolusi dan belum resolved/closed → tandai breach, naikkan priority satu tingkat, kirim notifikasi ke assignee (sesuai preferensi notifikasi masing-masing).
 
-## Testing
-
-```bash
-# Backend
-cd backend
-npm test
-
-# Frontend
-cd frontend
-npm test
-```
-
-CI otomatis jalan di GitHub Actions setiap push/PR ke branch `main` — build + test backend dan frontend secara paralel.
 
 ## Deploy ke Production
 
@@ -165,14 +132,14 @@ Aplikasi ini sudah dipakai di production dengan setup:
 - **Caddy** atau **Nginx + Certbot** sebagai reverse proxy dengan HTTPS otomatis
 - Migration database dijalankan manual (`npx prisma migrate dev`) setiap ada perubahan schema
 
-Langkah detail deploy production tersedia di riwayat percakapan pengembangan project ini — ringkasnya: `npm run build` di kedua folder, jalankan lewat PM2, arahkan domain lewat reverse proxy ke port backend (3000) untuk path `/api/*` dan ke hasil build frontend untuk path lainnya.
 
 ## Rencana Pengembangan Selanjutnya
 
-- [ ] Tag/label ticket (selain kategori)
 - [ ] Ticket watcher/CC — orang lain bisa ikut memantau ticket
 - [ ] Merge duplicate ticket
 - [ ] @mention di comment
+- [ ] Dashboard perbandingan performa antar department (khusus Super Admin)
+- [ ] SLA policy yang bisa dikustomisasi per department
 - [ ] E2E test (integration test untuk API endpoints)
 - [ ] Dockerize backend & frontend untuk deploy yang lebih portable
 
