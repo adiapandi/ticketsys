@@ -6,6 +6,8 @@ import { AttachmentSection } from '../components/AttachmentSection';
 import { AuditLogList } from '../components/AuditLogList';
 import { CsatRating } from '../components/CsatRating';
 import { TagEditor } from '../components/TagEditor';
+import { WatchersPanel } from '../components/WatchersPanel';
+import { MentionTextarea } from '../components/MentionTextarea';
 import { cannedResponsesApi, CannedResponse } from '../api/cannedResponses';
 import { useAuth } from '../context/AuthContext';
 
@@ -21,6 +23,7 @@ export function TicketDetailPage() {
   const [agents, setAgents] = useState<{ id: string; name: string; email: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [newComment, setNewComment] = useState('');
+  const [mentionedIds, setMentionedIds] = useState<string[]>([]);
   const [isInternal, setIsInternal] = useState(false);
   const [posting, setPosting] = useState(false);
   const [cannedResponses, setCannedResponses] = useState<CannedResponse[]>([]);
@@ -50,8 +53,9 @@ export function TicketDetailPage() {
     if (!id || !newComment.trim()) return;
     setPosting(true);
     try {
-      await commentsApi.create(id, { body: newComment, isInternal });
+      await commentsApi.create(id, { body: newComment, isInternal, mentionedUserIds: mentionedIds });
       setNewComment('');
+      setMentionedIds([]);
       setIsInternal(false);
       await load();
     } finally {
@@ -59,17 +63,17 @@ export function TicketDetailPage() {
     }
   }
 
-    function handleTemplateSelect(templateId: string) {
-    const template = cannedResponses.find((c) => c.id === templateId);
-    if (template) {
-      setNewComment((prev) => (prev ? `${prev}\n\n${template.body}` : template.body));
-    }
-  }
-
   async function handleFieldUpdate(field: string, value: string) {
     if (!id) return;
     await ticketsApi.update(id, { [field]: value });
     await load();
+  }
+
+  function handleTemplateSelect(templateId: string) {
+    const template = cannedResponses.find((c) => c.id === templateId);
+    if (template) {
+      setNewComment((prev) => (prev ? `${prev}\n\n${template.body}` : template.body));
+    }
   }
 
   if (loading) return <p className="text-slate-500 dark:text-slate-400">Memuat...</p>;
@@ -164,13 +168,25 @@ export function TicketDetailPage() {
                 ))}
               </select>
             )}
-            <textarea
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              rows={3}
-              placeholder="Tulis balasan..."
-              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
-            />
+
+            {isStaff ? (
+              <MentionTextarea
+                value={newComment}
+                onChange={setNewComment}
+                candidates={agents.filter((a) => a.id !== user?.id)}
+                onMention={(userId) => setMentionedIds((prev) => Array.from(new Set([...prev, userId])))}
+                placeholder="Tulis balasan... ketik @ untuk menyebut rekan tim"
+              />
+            ) : (
+              <textarea
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                rows={3}
+                placeholder="Tulis balasan..."
+                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+              />
+            )}
+
             <div className="flex items-center justify-between">
               {isStaff ? (
                 <label className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
@@ -228,71 +244,82 @@ export function TicketDetailPage() {
         {isStaff && <AuditLogList ticketId={ticket.id} />}
       </div>
 
-      {isStaff && (
-        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-5 h-fit space-y-4">
-          <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200">Kontrol Tiket</h2>
+      <div className="space-y-4 h-fit">
+        {isStaff && (
+          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-5 space-y-4">
+            <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200">Kontrol Tiket</h2>
 
-          <div>
-            <label className="text-xs text-slate-500 dark:text-slate-400">Status</label>
-            <select
-              value={ticket.status}
-              onChange={(e) => handleFieldUpdate('status', e.target.value)}
-              className="w-full mt-1 px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
-            >
-              {STATUS_OPTIONS.map((s) => (
-                <option key={s} value={s}>
-                  {s.replace('_', ' ')}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="text-xs text-slate-500 dark:text-slate-400">Priority</label>
-            <select
-              value={ticket.priority}
-              onChange={(e) => handleFieldUpdate('priority', e.target.value)}
-              className="w-full mt-1 px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
-            >
-              {PRIORITY_OPTIONS.map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="text-xs text-slate-500 dark:text-slate-400">Assign ke</label>
-            <select
-              value={ticket.assignee?.id || ''}
-              onChange={(e) => handleFieldUpdate('assigneeId', e.target.value)}
-              className="w-full mt-1 px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
-            >
-              <option value="">Belum di-assign</option>
-              {agents.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {ticket.resolutionDueAt && (
-            <div className="pt-2 border-t border-slate-100 dark:border-slate-700 space-y-1">
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Target resolusi:{' '}
-                <span className={ticket.isOverdue ? 'text-red-600 dark:text-red-400 font-medium' : 'text-slate-700 dark:text-slate-300'}>
-                  {new Date(ticket.resolutionDueAt).toLocaleString('id-ID')}
-                </span>
-              </p>
-              {ticket.escalated && (
-                <p className="text-xs text-orange-600 dark:text-orange-400">⚠ Ticket ini pernah di-escalate karena SLA breach</p>
-              )}
+            <div>
+              <label className="text-xs text-slate-500 dark:text-slate-400">Status</label>
+              <select
+                value={ticket.status}
+                onChange={(e) => handleFieldUpdate('status', e.target.value)}
+                className="w-full mt-1 px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+              >
+                {STATUS_OPTIONS.map((s) => (
+                  <option key={s} value={s}>
+                    {s.replace('_', ' ')}
+                  </option>
+                ))}
+              </select>
             </div>
-          )}
-        </div>
-      )}
+
+            <div>
+              <label className="text-xs text-slate-500 dark:text-slate-400">Priority</label>
+              <select
+                value={ticket.priority}
+                onChange={(e) => handleFieldUpdate('priority', e.target.value)}
+                className="w-full mt-1 px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+              >
+                {PRIORITY_OPTIONS.map((p) => (
+                  <option key={p} value={p}>
+                    {p}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="text-xs text-slate-500 dark:text-slate-400">Assign ke</label>
+              <select
+                value={ticket.assignee?.id || ''}
+                onChange={(e) => handleFieldUpdate('assigneeId', e.target.value)}
+                className="w-full mt-1 px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded-md text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+              >
+                <option value="">Belum di-assign</option>
+                {agents.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {ticket.resolutionDueAt && (
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-700 space-y-1">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Target resolusi:{' '}
+                  <span className={ticket.isOverdue ? 'text-red-600 dark:text-red-400 font-medium' : 'text-slate-700 dark:text-slate-300'}>
+                    {new Date(ticket.resolutionDueAt).toLocaleString('id-ID')}
+                  </span>
+                </p>
+                {ticket.escalated && (
+                  <p className="text-xs text-orange-600 dark:text-orange-400">⚠ Ticket ini pernah di-escalate karena SLA breach</p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {isStaff && (
+          <WatchersPanel
+            ticketId={ticket.id}
+            watchers={ticket.watchers || []}
+            candidates={agents.filter((a) => a.id !== user?.id)}
+            onChange={load}
+          />
+        )}
+      </div>
     </div>
   );
 }
