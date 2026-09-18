@@ -28,4 +28,8 @@ export class UpdatePreferencesDto {
   @IsOptional()
   @IsBoolean()
   notifySlaBreached?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  notifyMentioned?: boolean;
 }
