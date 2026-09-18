@@ -11,6 +11,7 @@ export const DEFAULT_NOTIFICATION_PREFS = {
   notifyStatusChanged: true,
   notifyNewComment: true,
   notifySlaBreached: true,
+  notifyMentioned: true,
 };
 
 export type NotificationPrefs = typeof DEFAULT_NOTIFICATION_PREFS;
