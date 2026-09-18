@@ -58,6 +58,16 @@ export class TicketsController {
     return this.ticketsService.removeTag(id, tagId, user);
   }
 
+  @Post(':id/watchers')
+  addWatcher(@Param('id') id: string, @Body('userId') userId: string, @CurrentUser() user: any) {
+    return this.ticketsService.addWatcher(id, userId, user);
+  }
+
+  @Delete(':id/watchers/:userId')
+  removeWatcher(@Param('id') id: string, @Param('userId') userId: string, @CurrentUser() user: any) {
+    return this.ticketsService.removeWatcher(id, userId, user);
+  }
+
   @Get('export')
   @Roles('SUPER_ADMIN', 'ADMIN', 'AGENT')
   async exportTickets(
