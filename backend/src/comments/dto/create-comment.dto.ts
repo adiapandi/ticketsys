@@ -1,4 +1,4 @@
-import { IsString, MinLength, IsOptional, IsBoolean } from 'class-validator';
+import { IsString, MinLength, IsOptional, IsBoolean, IsArray } from 'class-validator';
 
 export class CreateCommentDto {
   @IsString()
@@ -8,4 +8,8 @@ export class CreateCommentDto {
   @IsOptional()
   @IsBoolean()
   isInternal?: boolean;
+
+  @IsOptional()
+  @IsArray()
+  mentionedUserIds?: string[];
 }
