@@ -4,6 +4,7 @@ const statusColor: Record<string, string> = {
   PENDING: 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300',
   RESOLVED: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300',
   CLOSED: 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
+  MERGED: 'bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-900/40 dark:text-fuchsia-300',
 };
 
 const priorityColor: Record<string, string> = {
