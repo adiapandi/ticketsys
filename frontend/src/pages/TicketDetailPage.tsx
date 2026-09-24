@@ -1,5 +1,5 @@
 import { useEffect, useState, FormEvent } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { ticketsApi, commentsApi, usersApi, Ticket, Comment } from '../api/tickets';
 import { StatusBadge, PriorityBadge, SlaBadge } from '../components/Badges';
 import { AttachmentSection } from '../components/AttachmentSection';
@@ -7,6 +7,7 @@ import { AuditLogList } from '../components/AuditLogList';
 import { CsatRating } from '../components/CsatRating';
 import { TagEditor } from '../components/TagEditor';
 import { WatchersPanel } from '../components/WatchersPanel';
+import { MergeTicketPanel } from '../components/MergeTicketPanel';
 import { MentionTextarea } from '../components/MentionTextarea';
 import { cannedResponsesApi, CannedResponse } from '../api/cannedResponses';
 import { useAuth } from '../context/AuthContext';
@@ -79,9 +80,34 @@ export function TicketDetailPage() {
   if (loading) return <p className="text-slate-500 dark:text-slate-400">Memuat...</p>;
   if (!ticket) return <p className="text-red-500 dark:text-red-400">Ticket tidak ditemukan.</p>;
 
+  const isMerged = ticket.status === 'MERGED';
+
   return (
     <div className="grid md:grid-cols-3 gap-6">
       <div className="md:col-span-2 space-y-4">
+        {isMerged && ticket.mergedInto && (
+          <div className="bg-fuchsia-50 dark:bg-fuchsia-900/20 border border-fuchsia-200 dark:border-fuchsia-800 rounded-lg p-4 text-sm text-fuchsia-700 dark:text-fuchsia-300">
+            Ticket ini sudah digabungkan ke{' '}
+            <Link to={`/tickets/${ticket.mergedInto.id}`} className="font-medium underline">
+              "{ticket.mergedInto.title}"
+            </Link>{' '}
+            — silakan lanjut diskusi di ticket tersebut.
+          </div>
+        )}
+        {ticket.mergedFrom && ticket.mergedFrom.length > 0 && (
+          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-4">
+            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Digabung dari:</p>
+            {ticket.mergedFrom.map((t) => (
+              <Link
+                key={t.id}
+                to={`/tickets/${t.id}`}
+                className="block text-xs text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                {t.title}
+              </Link>
+            ))}
+          </div>
+        )}
         <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-5">
           <div className="flex items-start justify-between gap-4">
             <h1 className="text-lg font-semibold text-slate-800 dark:text-slate-100">{ticket.title}</h1>
@@ -148,6 +174,7 @@ export function TicketDetailPage() {
             ))}
           </div>
 
+          {!isMerged && (
           <form onSubmit={handleCommentSubmit} className="p-5 border-t border-slate-100 dark:border-slate-700 space-y-2">
             {isStaff && cannedResponses.length > 0 && (
               <select
@@ -209,6 +236,7 @@ export function TicketDetailPage() {
               </button>
             </div>
           </form>
+          )}
         </div>
 
         <AttachmentSection ticketId={ticket.id} canDelete={isStaff} />
@@ -309,6 +337,10 @@ export function TicketDetailPage() {
               </div>
             )}
           </div>
+        )}
+
+        {isStaff && !isMerged && (
+          <MergeTicketPanel ticket={ticket} onMerged={load} />
         )}
 
         {isStaff && (
