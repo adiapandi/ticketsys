@@ -17,6 +17,7 @@ import { UpdateTicketDto } from './dto/update-ticket.dto';
 import { QueryTicketDto } from './dto/query-ticket.dto';
 import { SubmitCsatDto } from './dto/submit-csat.dto';
 import { AddTagDto } from '../tags/dto/add-tag.dto';
+import { MergeTicketDto } from './dto/merge-ticket.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -107,5 +108,10 @@ export class TicketsController {
   @Roles('SUPER_ADMIN', 'ADMIN')
   remove(@Param('id') id: string, @CurrentUser() user: any) {
     return this.ticketsService.remove(id, user);
+  }
+
+  @Post(':id/merge')
+  merge(@Param('id') id: string, @Body() dto: MergeTicketDto, @CurrentUser() user: any) {
+    return this.ticketsService.merge(id, dto, user);
   }
 }
