@@ -4,6 +4,7 @@ import { CreateTicketDto } from './dto/create-ticket.dto';
 import { UpdateTicketDto } from './dto/update-ticket.dto';
 import { QueryTicketDto } from './dto/query-ticket.dto';
 import { SubmitCsatDto } from './dto/submit-csat.dto';
+import { MergeTicketDto } from './dto/merge-ticket.dto';
 import { TicketStatus } from '@prisma/client';
 import { MailService } from '../mail/mail.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -195,6 +196,8 @@ export class TicketsService {
         department: { select: { id: true, name: true } },
         tags: true,
         watchers: { select: { id: true, name: true, email: true } },
+        mergedInto: { select: { id: true, title: true, status: true } },
+        mergedFrom: { select: { id: true, title: true, status: true, createdAt: true } },
         comments: {
           include: { author: { select: { id: true, name: true, role: true } } },
           orderBy: { createdAt: 'asc' },
@@ -209,7 +212,7 @@ export class TicketsService {
   }
 
   private isOverdue(ticket: { status: string; resolutionDueAt: Date | null; slaBreached: boolean }) {
-    if (['RESOLVED', 'CLOSED'].includes(ticket.status)) return false;
+    if (['RESOLVED', 'CLOSED', 'MERGED'].includes(ticket.status)) return false;
     if (ticket.slaBreached) return true;
     if (!ticket.resolutionDueAt) return false;
     return new Date(ticket.resolutionDueAt) < new Date();
@@ -221,6 +224,11 @@ export class TicketsService {
       include: { requester: true },
     });
     if (!ticket) throw new NotFoundException('Ticket tidak ditemukan');
+    if (ticket.status === 'MERGED') {
+      throw new BadRequestException(
+        `Ticket ini sudah digabung ke ticket lain (${ticket.mergedIntoId}) dan tidak bisa diubah lagi`,
+      );
+    }
 
     if (user.role === 'CUSTOMER') {
       if (ticket.requesterId !== user.userId) {
@@ -413,6 +421,92 @@ export class TicketsService {
       where: { id: ticketId },
       include: { watchers: { select: { id: true, name: true, email: true } } },
     });
+  }
+
+  async merge(sourceId: string, dto: MergeTicketDto, user: AuthUser) {
+    if (user.role === 'CUSTOMER') {
+      throw new ForbiddenException('Customer tidak bisa menggabungkan ticket');
+    }
+    if (sourceId === dto.targetTicketId) {
+      throw new BadRequestException('Tidak bisa menggabungkan ticket ke dirinya sendiri');
+    }
+
+    const [source, target] = await Promise.all([
+      this.prisma.ticket.findUnique({ where: { id: sourceId }, include: { requester: true } }),
+      this.prisma.ticket.findUnique({ where: { id: dto.targetTicketId }, include: { requester: true } }),
+    ]);
+
+    if (!source) throw new NotFoundException('Ticket sumber tidak ditemukan');
+    if (!target) throw new NotFoundException('Ticket tujuan tidak ditemukan');
+    if (source.status === 'MERGED') {
+      throw new BadRequestException('Ticket ini sudah pernah digabung sebelumnya');
+    }
+    if (target.status === 'MERGED') {
+      throw new BadRequestException('Tidak bisa menggabung ke ticket yang statusnya juga sudah MERGED');
+    }
+
+    if (user.role !== 'SUPER_ADMIN') {
+      if (source.departmentId !== user.departmentId || target.departmentId !== user.departmentId) {
+        throw new ForbiddenException('Kedua ticket harus dari department kamu sendiri');
+      }
+    } else if (source.departmentId !== target.departmentId) {
+      throw new BadRequestException('Ticket sumber dan tujuan harus dari department yang sama');
+    }
+
+    await this.prisma.comment.updateMany({ where: { ticketId: sourceId }, data: { ticketId: dto.targetTicketId } });
+    await this.prisma.attachment.updateMany({
+      where: { ticketId: sourceId },
+      data: { ticketId: dto.targetTicketId },
+    });
+
+    await this.prisma.comment.create({
+      data: {
+        body: `Ticket ini digabungkan ke ticket "${target.title}" oleh ${user.email}`,
+        isInternal: true,
+        ticketId: sourceId,
+        authorId: user.userId,
+      },
+    });
+    await this.prisma.comment.create({
+      data: {
+        body: `Ticket "${source.title}" digabungkan ke sini oleh ${user.email}`,
+        isInternal: true,
+        ticketId: dto.targetTicketId,
+        authorId: user.userId,
+      },
+    });
+
+    const updatedSource = await this.prisma.ticket.update({
+      where: { id: sourceId },
+      data: { status: 'MERGED', mergedIntoId: dto.targetTicketId, closedAt: new Date() },
+    });
+
+    await this.auditLogService.log(
+      'TICKET_MERGED',
+      `Ticket digabungkan ke "${target.title}"`,
+      user.userId,
+      sourceId,
+    );
+    await this.auditLogService.log(
+      'TICKET_MERGED_FROM',
+      `Ticket "${source.title}" digabungkan ke sini`,
+      user.userId,
+      dto.targetTicketId,
+    );
+
+    if (source.requesterId !== user.userId) {
+      await this.notificationsService.create(
+        source.requesterId,
+        'TICKET_STATUS_CHANGED',
+        `Ticket "${source.title}" digabungkan ke ticket "${target.title}"`,
+        sourceId,
+      );
+      if (await this.notificationsService.canSendEmail(source.requesterId, 'notifyStatusChanged')) {
+        await this.mailService.sendStatusChanged(source.requester.email, source.title, sourceId, 'MERGED');
+      }
+    }
+
+    return updatedSource;
   }
 
   async getStats(user: AuthUser) {
