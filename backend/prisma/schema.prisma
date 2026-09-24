@@ -20,6 +20,7 @@ enum TicketStatus {
   PENDING
   RESOLVED
   CLOSED
+  MERGED
 }
 
 enum TicketPriority {
@@ -100,6 +101,10 @@ model Ticket {
   attachments Attachment[]
   tags        Tag[]
   watchers    User[]       @relation("TicketWatchers")
+  
+  mergedIntoId String?
+  mergedInto   Ticket?  @relation("TicketMerge", fields: [mergedIntoId], references: [id])
+  mergedFrom   Ticket[] @relation("TicketMerge")
 
   @@map("tickets")
 }
