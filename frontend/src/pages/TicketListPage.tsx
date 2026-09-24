@@ -7,7 +7,7 @@ import { Download } from 'lucide-react';
 import { StatusBadge, PriorityBadge, SlaBadge } from '../components/Badges';
 import { useAuth } from '../context/AuthContext';
 
-const STATUS_OPTIONS = ['', 'OPEN', 'IN_PROGRESS', 'PENDING', 'RESOLVED', 'CLOSED'];
+const STATUS_OPTIONS = ['', 'OPEN', 'IN_PROGRESS', 'PENDING', 'RESOLVED', 'CLOSED', 'MERGED'];
 const PRIORITY_OPTIONS = ['', 'LOW', 'MEDIUM', 'HIGH', 'URGENT'];
 const SORT_OPTIONS = [
   { label: 'Terbaru dibuat', sortBy: 'createdAt', order: 'desc' },
