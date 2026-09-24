@@ -22,6 +22,8 @@ export interface Ticket {
   department?: { id: string; name: string } | null;
   tags?: { id: string; name: string }[];
   watchers?: { id: string; name: string; email: string }[];
+  mergedInto?: { id: string; title: string; status: string } | null;
+  mergedFrom?: { id: string; title: string; status: string; createdAt: string }[];
   _count?: { comments: number };
 }
 
@@ -83,6 +85,8 @@ export const ticketsApi = {
   removeTag: (ticketId: string, tagId: string) => api.delete(`/tickets/${ticketId}/tags/${tagId}`),
   addWatcher: (ticketId: string, userId: string) => api.post(`/tickets/${ticketId}/watchers`, { userId }),
   removeWatcher: (ticketId: string, userId: string) => api.delete(`/tickets/${ticketId}/watchers/${userId}`),
+  merge: (ticketId: string, targetTicketId: string) =>
+    api.post(`/tickets/${ticketId}/merge`, { targetTicketId }),
   stats: () =>
     api.get<{ open: number; inProgress: number; resolved: number; closed: number; total: number }>(
       '/tickets/stats',
