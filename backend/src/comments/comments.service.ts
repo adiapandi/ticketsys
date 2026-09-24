@@ -41,6 +41,10 @@ export class CommentsService {
 
     this.assertAccess(ticket, user);
 
+    if ((ticket as any).status === 'MERGED') {
+      throw new ForbiddenException('Ticket ini sudah digabung ke ticket lain, tidak bisa dikomentari lagi');
+    }
+
     const isInternal = user.role === 'CUSTOMER' ? false : !!dto.isInternal;
 
     const comment = await this.prisma.comment.create({
